@@ -132,15 +132,6 @@ def seed_database():
         
         db.commit()
 
-        # Seed sample data if products are empty
-        from app.models.product import Product
-        if db.query(Product).count() == 0:
-            try:
-                from seed_subscription_data import seed_data
-                print("[INFO] Seeding initial subscription catalog data...")
-                seed_data()
-            except Exception as se:
-                print(f"[NOTICE] Sample data seed notice: {se}")
 
     except Exception as e:
         print(f"[ERROR] Error seeding database: {e}")

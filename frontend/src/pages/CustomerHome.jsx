@@ -47,23 +47,23 @@ const CustomerHome = () => {
   const handleQuickAddToCart = async (product) => {
     try {
       setAddingProductId(product.id);
-      const response = await axios.get(`/products/${product.id}/options`);
-      const { recurring_plans } = response.data;
-
-      if (!recurring_plans || recurring_plans.length === 0) {
-        alert('This product has no billing plans available');
-        return;
+      let recurring_plans = [];
+      try {
+        const response = await axios.get(`/products/${product.id}/options`);
+        recurring_plans = response.data?.recurring_plans || [];
+      } catch (e) {
+        console.warn('Could not fetch options, proceeding with standard product', e);
       }
 
-      const monthlyPlan = recurring_plans.find(p => p.billing_period === 'month');
-      const selectedPlan = monthlyPlan || recurring_plans[0];
+      const monthlyPlan = recurring_plans.find(p => p.billing_period === 'month' || p.billing_period === 'monthly');
+      const selectedPlan = monthlyPlan || (recurring_plans.length > 0 ? recurring_plans[0] : null);
 
       const cartItem = {
         productId: product.id,
         productName: product.name,
         variantIds: [],
-        planId: selectedPlan.id,
-        planName: selectedPlan.name,
+        planId: selectedPlan ? selectedPlan.id : null,
+        planName: selectedPlan ? selectedPlan.name : 'One-time',
         quantity: 1,
         unitPrice: product.base_price,
         subtotal: product.base_price,
@@ -91,55 +91,36 @@ const CustomerHome = () => {
     }
   };
 
-  // All categories configuration
-  const allCategoryDefinitions = [
-    { id: 'all', label: 'All Products', icon: '✨' },
-    { id: 'subscription', label: 'Subscriptions', icon: '🔄' },
-    { id: 'streaming', label: 'Streaming & Video', icon: '🎬' },
-    { id: 'music', label: 'Music & Audio', icon: '🎵' },
-    { id: 'service', label: 'Digital Services', icon: '⚡' },
-    { id: 'software', label: 'Software & Cloud', icon: '💻' },
-    { id: 'storable', label: 'Physical & Storable', icon: '📦' },
-    { id: 'consulting', label: 'Consulting', icon: '🎯' }
-  ];
+  // Derive categories dynamically from database products
+  const productTypes = [...new Set(products.map(p => p.type || p.product_type).filter(Boolean))];
 
-  const dynamicCategories = [...new Set(products.map(p => p.product_type || p.type).filter(Boolean))];
+  const typeIcons = {
+    service: '⚡',
+    storable: '📦',
+    software: '💻',
+    subscription: '🔄',
+    consulting: '🎯'
+  };
+
   const categories = [
-    ...allCategoryDefinitions,
-    ...dynamicCategories
-      .filter(c => !allCategoryDefinitions.some(def => def.id === c))
-      .map(c => ({ id: c, label: String(c).charAt(0).toUpperCase() + String(c).slice(1), icon: '🏷️' }))
+    { id: 'all', label: 'All Products', icon: '✨' },
+    ...productTypes.map(t => ({
+      id: String(t).toLowerCase(),
+      label: String(t).charAt(0).toUpperCase() + String(t).slice(1),
+      icon: typeIcons[String(t).toLowerCase()] || '🏷️'
+    }))
   ];
 
   // Filter and sort products
   const filteredProducts = products
     .filter(product => {
-      const prodType = (product.product_type || product.type || '').toLowerCase();
+      const prodType = (product.type || product.product_type || '').toLowerCase();
       const prodName = (product.name || '').toLowerCase();
       const prodDesc = (product.description || '').toLowerCase();
       const matchesSearch = prodName.includes(searchTerm.toLowerCase()) ||
                             prodDesc.includes(searchTerm.toLowerCase());
 
-      let matchesCategory = true;
-      if (selectedCategory !== 'all') {
-        if (selectedCategory === 'streaming') {
-          matchesCategory = prodName.includes('netflix') || prodName.includes('stream') || prodName.includes('amazon') || prodName.includes('youtube') || prodDesc.includes('stream') || prodDesc.includes('video');
-        } else if (selectedCategory === 'music') {
-          matchesCategory = prodName.includes('spotify') || prodName.includes('music') || prodName.includes('audio') || prodDesc.includes('music') || prodDesc.includes('audio');
-        } else if (selectedCategory === 'subscription') {
-          matchesCategory = prodType === 'service' || prodName.includes('subscription') || !!product.billing_period || prodName.includes('netflix') || prodName.includes('spotify') || prodName.includes('amazon') || prodName.includes('youtube');
-        } else if (selectedCategory === 'service') {
-          matchesCategory = prodType === 'service';
-        } else if (selectedCategory === 'storable') {
-          matchesCategory = prodType === 'storable';
-        } else if (selectedCategory === 'software') {
-          matchesCategory = prodType === 'software' || prodName.includes('software') || prodName.includes('cloud') || prodName.includes('suite');
-        } else if (selectedCategory === 'consulting') {
-          matchesCategory = prodType === 'consulting' || prodName.includes('consult');
-        } else {
-          matchesCategory = prodType === selectedCategory.toLowerCase() || prodName.includes(selectedCategory.toLowerCase());
-        }
-      }
+      const matchesCategory = selectedCategory === 'all' || prodType === selectedCategory;
 
       let matchesPrice = true;
       if (priceRange === 'under500') matchesPrice = product.base_price < 500;

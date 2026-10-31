@@ -8,6 +8,7 @@ class ProductBase(BaseModel):
     base_price: float
     cost: float
     description: Optional[str] = None
+    is_active: bool = True
 
 class ProductCreate(ProductBase):
     pass
@@ -18,6 +19,7 @@ class ProductUpdate(BaseModel):
     base_price: Optional[float] = None
     cost: Optional[float] = None
     description: Optional[str] = None
+    is_active: Optional[bool] = None
 
 class Product(ProductBase):
     id: int
@@ -48,7 +50,6 @@ class ProductVariantDetail(BaseModel):
     attribute_name: str
     attribute_value: str
     extra_price: float
-    total_price: float
 
 class ProductDetail(Product):
     variants: List[ProductVariantDetail] = []

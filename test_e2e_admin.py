@@ -232,7 +232,34 @@ def run_tests():
         print("=" * 60)
 
     finally:
-        db.close()
+        try:
+            if 'payment' in locals() and payment and payment.id:
+                db.delete(payment)
+            if 'invoice' in locals() and invoice and invoice.id:
+                for line in (invoice.invoice_lines or []):
+                    db.delete(line)
+                db.delete(invoice)
+            if 'sub' in locals() and sub and sub.id:
+                for line in (sub.subscription_lines or []):
+                    db.delete(line)
+                db.delete(sub)
+            if 'quot' in locals() and quot and quot.id:
+                for line in (quot.quotation_lines or []):
+                    db.delete(line)
+                db.delete(quot)
+            if 'plan' in locals() and plan and plan.id:
+                db.delete(plan)
+            if 'variant' in locals() and variant and variant.id:
+                db.delete(variant)
+            if 'product' in locals() and product and product.id:
+                db.delete(product)
+            if 'discount' in locals() and discount and discount.id:
+                db.delete(discount)
+            db.commit()
+        except Exception:
+            db.rollback()
+        finally:
+            db.close()
 
 if __name__ == "__main__":
     run_tests()

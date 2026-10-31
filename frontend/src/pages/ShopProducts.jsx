@@ -75,14 +75,15 @@ const ShopProducts = () => {
   };
 
   // Get unique categories
-  const categories = ['all', ...new Set(products.map(p => p.product_type).filter(Boolean))];
+  const categories = ['all', ...new Set(products.map(p => p.type || p.product_type).filter(Boolean))];
 
   // Filter and sort products
   const filteredProducts = products
     .filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || product.product_type === selectedCategory;
+      const prodType = product.type || product.product_type;
+      const matchesCategory = selectedCategory === 'all' || prodType === selectedCategory;
       
       let matchesPrice = true;
       if (priceRange === 'under500') matchesPrice = product.base_price < 500;
