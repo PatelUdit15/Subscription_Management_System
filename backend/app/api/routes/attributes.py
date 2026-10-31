@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.base import get_db
+from app.models.user import User
+from app.api.routes.auth import require_roles
 from app.models.attribute import Attribute
 from app.models.attribute_value import AttributeValue
 from app.schemas import attribute, attribute_value
@@ -14,7 +16,7 @@ def get_attributes(db: Session = Depends(get_db)):
     return db.query(Attribute).all()
 
 @router.post("/attributes", response_model=attribute.Attribute)
-def create_attribute(attr: attribute.AttributeCreate, db: Session = Depends(get_db)):
+def create_attribute(attr: attribute.AttributeCreate, current_user: User = Depends(require_roles("admin")), db: Session = Depends(get_db)):
     db_attr = Attribute(**attr.model_dump())
     db.add(db_attr)
     db.commit()
@@ -22,7 +24,7 @@ def create_attribute(attr: attribute.AttributeCreate, db: Session = Depends(get_
     return db_attr
 
 @router.put("/attributes/{attribute_id}", response_model=attribute.Attribute)
-def update_attribute(attribute_id: int, attr: attribute.AttributeUpdate, db: Session = Depends(get_db)):
+def update_attribute(attribute_id: int, attr: attribute.AttributeUpdate, current_user: User = Depends(require_roles("admin")), db: Session = Depends(get_db)):
     db_attr = db.query(Attribute).filter(Attribute.id == attribute_id).first()
     if not db_attr:
         raise HTTPException(status_code=404, detail="Attribute not found")
@@ -35,7 +37,7 @@ def update_attribute(attribute_id: int, attr: attribute.AttributeUpdate, db: Ses
     return db_attr
 
 @router.delete("/attributes/{attribute_id}")
-def delete_attribute(attribute_id: int, db: Session = Depends(get_db)):
+def delete_attribute(attribute_id: int, current_user: User = Depends(require_roles("admin")), db: Session = Depends(get_db)):
     db_attr = db.query(Attribute).filter(Attribute.id == attribute_id).first()
     if not db_attr:
         raise HTTPException(status_code=404, detail="Attribute not found")
@@ -53,7 +55,7 @@ def get_attribute_values(attribute_id: int = None, db: Session = Depends(get_db)
     return query.all()
 
 @router.post("/attribute-values", response_model=attribute_value.AttributeValue)
-def create_attribute_value(value: attribute_value.AttributeValueCreate, db: Session = Depends(get_db)):
+def create_attribute_value(value: attribute_value.AttributeValueCreate, current_user: User = Depends(require_roles("admin")), db: Session = Depends(get_db)):
     db_value = AttributeValue(**value.model_dump())
     db.add(db_value)
     db.commit()
@@ -61,7 +63,7 @@ def create_attribute_value(value: attribute_value.AttributeValueCreate, db: Sess
     return db_value
 
 @router.put("/attribute-values/{value_id}", response_model=attribute_value.AttributeValue)
-def update_attribute_value(value_id: int, value: attribute_value.AttributeValueUpdate, db: Session = Depends(get_db)):
+def update_attribute_value(value_id: int, value: attribute_value.AttributeValueUpdate, current_user: User = Depends(require_roles("admin")), db: Session = Depends(get_db)):
     db_value = db.query(AttributeValue).filter(AttributeValue.id == value_id).first()
     if not db_value:
         raise HTTPException(status_code=404, detail="Attribute value not found")
@@ -74,7 +76,7 @@ def update_attribute_value(value_id: int, value: attribute_value.AttributeValueU
     return db_value
 
 @router.delete("/attribute-values/{value_id}")
-def delete_attribute_value(value_id: int, db: Session = Depends(get_db)):
+def delete_attribute_value(value_id: int, current_user: User = Depends(require_roles("admin")), db: Session = Depends(get_db)):
     db_value = db.query(AttributeValue).filter(AttributeValue.id == value_id).first()
     if not db_value:
         raise HTTPException(status_code=404, detail="Attribute value not found")

@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import axiosInstance from '../api/axios'
 import './ProductsPage.css'
 
 function ProductsPage() {
+  const { currentUser } = useAuth()
+  const isAdmin = currentUser?.role === 'admin'
+  const isInternal = currentUser?.role === 'internal'
+  
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -62,29 +67,39 @@ function ProductsPage() {
 
       const response = await axiosInstance.post('/products', payload)
       showToast('Product created successfully!')
-      fetchProducts()
       closeModal()
-      
-      // Navigate to product detail page
-      navigate(`/admin/products/${response.data.id}`)
+      fetchProducts()
+      if (response?.data?.id) {
+        navigate(`/admin/products/${response.data.id}`)
+      }
     } catch (error) {
       showToast(error.response?.data?.detail || 'Failed to create product', 'error')
     }
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return
+    if (!isAdmin) {
+      showToast('Only administrators can delete products', 'error')
+      return
+    }
+    if (!window.confirm('Are you sure you want to delete this product?')) {
+      return
+    }
 
     try {
-      await axiosInstance.delete(`/api/products/${id}`)
+      await axiosInstance.delete(`/products/${id}`)
       showToast('Product deleted successfully!')
       fetchProducts()
     } catch (error) {
-      showToast('Failed to delete product', 'error')
+      showToast(error.response?.data?.detail || 'Failed to delete product', 'error')
     }
   }
 
   const openModal = () => {
+    if (!isAdmin) {
+      showToast('Only administrators can create products', 'error')
+      return
+    }
     setFormData({ name: '', type: 'storable', base_price: '', cost: '', description: '' })
     setErrors({})
     setShowModal(true)
@@ -110,25 +125,30 @@ function ProductsPage() {
 
       <div className="page-header">
         <div>
-          <h1 className="page-title">Product Management</h1>
-          <p className="page-subtitle">Manage products, pricing, and variants</p>
+          <h1 className="page-title">Product Catalog</h1>
+          <p className="page-subtitle">
+            {isInternal 
+              ? 'Operational view of products and pricing for quotations and subscriptions (Admin-configured)' 
+              : 'Manage products, pricing, and variants'}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           {/* View Switcher */}
           <div style={{
             display: 'flex',
             background: '#f4f4f5',
+            padding: '0.25rem',
             borderRadius: '8px',
-            padding: '0.25rem'
+            gap: '0.25rem'
           }}>
             <button
               onClick={() => setViewMode('list')}
               style={{
                 padding: '0.5rem 1rem',
                 border: 'none',
-                background: viewMode === 'list' ? 'white' : 'transparent',
-                color: viewMode === 'list' ? '#18181b' : '#71717a',
                 borderRadius: '6px',
+                background: viewMode === 'list' ? 'white' : 'transparent',
+                color: viewMode === 'list' ? '#001D39' : '#71717a',
                 cursor: 'pointer',
                 fontFamily: 'Quicksand, sans-serif',
                 fontWeight: '600',
@@ -144,9 +164,9 @@ function ProductsPage() {
               style={{
                 padding: '0.5rem 1rem',
                 border: 'none',
-                background: viewMode === 'kanban' ? 'white' : 'transparent',
-                color: viewMode === 'kanban' ? '#18181b' : '#71717a',
                 borderRadius: '6px',
+                background: viewMode === 'kanban' ? 'white' : 'transparent',
+                color: viewMode === 'kanban' ? '#001D39' : '#71717a',
                 cursor: 'pointer',
                 fontFamily: 'Quicksand, sans-serif',
                 fontWeight: '600',
@@ -158,9 +178,24 @@ function ProductsPage() {
               🎴 Kanban
             </button>
           </div>
-          <button className="btn-primary" onClick={openModal}>
-            + New Product
-          </button>
+
+          {isAdmin ? (
+            <button className="btn-primary" onClick={openModal}>
+              + New Product
+            </button>
+          ) : (
+            <span style={{
+              padding: '0.55rem 1rem',
+              background: '#ecfdf5',
+              color: '#065f46',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              fontWeight: '600',
+              border: '1px solid #a7f3d0'
+            }}>
+              👁️ Read-Only Catalog
+            </span>
+          )}
         </div>
       </div>
 
@@ -182,7 +217,7 @@ function ProductsPage() {
               {products.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="empty-state">
-                    No products found. Create your first product to get started.
+                    No products found.
                   </td>
                 </tr>
               ) : (
@@ -207,18 +242,20 @@ function ProductsPage() {
                       <div className="action-buttons">
                         <button 
                           className="btn-icon btn-edit" 
-                          onClick={() => navigate(`/admin/products/${product.id}`)}
-                          title="View/Edit"
+onClick={() => navigate(`/admin/products/${product.id}`)}
+                          title={isAdmin ? 'View/Edit' : 'View Product Details'}
                         >
                           👁️
                         </button>
-                        <button 
-                          className="btn-icon btn-delete" 
-                          onClick={() => handleDelete(product.id)}
-                          title="Delete"
-                        >
-                          🗑️
-                        </button>
+                        {isAdmin && (
+                          <button 
+                            className="btn-icon btn-delete" 
+                            onClick={() => handleDelete(product.id)}
+                            title="Delete"
+                          >
+                            🗑️
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -245,7 +282,7 @@ function ProductsPage() {
               padding: '3rem',
               color: '#71717a'
             }}>
-              No products found. Create your first product to get started.
+              No products found.
             </div>
           ) : (
             products.map(product => {
@@ -273,19 +310,17 @@ function ProductsPage() {
                     e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 29, 57, 0.08)';
                   }}
                 >
-                  {/* Product Image Placeholder */}
                   <div style={{
-                    height: '180px',
+                    height: '160px',
                     background: 'linear-gradient(135deg, #0A4174 0%, #49769F 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '4rem'
+                    fontSize: '3.5rem'
                   }}>
                     📦
                   </div>
                   
-                  {/* Product Info */}
                   <div style={{ padding: '1.25rem' }}>
                     <h3 style={{
                       fontFamily: 'Gabarito, sans-serif',
@@ -315,7 +350,6 @@ function ProductsPage() {
                       </span>
                     </div>
                     
-                    {/* Price Badge */}
                     <div style={{
                       background: '#dcfce7',
                       color: '#166534',
@@ -324,28 +358,27 @@ function ProductsPage() {
                       textAlign: 'center'
                     }}>
                       <div style={{
-                        fontSize: '0.85rem',
+                        fontSize: '0.82rem',
                         marginBottom: '0.25rem'
                       }}>
                         Base Price
                       </div>
                       <div style={{
                         fontFamily: 'Gabarito, sans-serif',
-                        fontSize: '1.5rem',
+                        fontSize: '1.4rem',
                         fontWeight: '700'
                       }}>
                         ${product.base_price.toFixed(2)}
                       </div>
                     </div>
                     
-                    {/* Margin Info */}
                     <div style={{
                       marginTop: '1rem',
                       paddingTop: '1rem',
                       borderTop: '1px solid #f4f4f5',
                       display: 'flex',
                       justifyContent: 'space-between',
-                      fontSize: '0.85rem',
+                      fontSize: '0.82rem',
                       color: '#71717a'
                     }}>
                       <span>Cost: ${product.cost.toFixed(2)}</span>
@@ -364,7 +397,7 @@ function ProductsPage() {
         </div>
       )}
 
-      {showModal && (
+      {showModal && isAdmin && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">

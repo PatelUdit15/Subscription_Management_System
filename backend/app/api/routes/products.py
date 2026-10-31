@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.base import get_db
@@ -6,6 +6,8 @@ from app.models.product import Product
 from app.models.product_variant import ProductVariant
 from app.models.attribute_value import AttributeValue
 from app.models.attribute import Attribute
+from app.models.user import User
+from app.api.routes.auth import require_roles
 from app.schemas import product
 
 router = APIRouter()
@@ -40,8 +42,13 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
         "variants": variant_details
     }
 
-@router.post("/products", response_model=product.Product)
-def create_product(prod: product.ProductCreate, db: Session = Depends(get_db)):
+@router.post("/products", response_model=product.Product, status_code=status.HTTP_201_CREATED)
+def create_product(
+    prod: product.ProductCreate,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
+    """Create product (Admin only - Internal users forbidden)"""
     db_product = Product(**prod.model_dump())
     db.add(db_product)
     db.commit()
@@ -49,7 +56,13 @@ def create_product(prod: product.ProductCreate, db: Session = Depends(get_db)):
     return db_product
 
 @router.put("/products/{product_id}", response_model=product.Product)
-def update_product(product_id: int, prod: product.ProductUpdate, db: Session = Depends(get_db)):
+def update_product(
+    product_id: int,
+    prod: product.ProductUpdate,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
+    """Update product (Admin only)"""
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -62,7 +75,12 @@ def update_product(product_id: int, prod: product.ProductUpdate, db: Session = D
     return db_product
 
 @router.delete("/products/{product_id}")
-def delete_product(product_id: int, db: Session = Depends(get_db)):
+def delete_product(
+    product_id: int,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
+    """Delete product (Admin only)"""
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -71,9 +89,14 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Product deleted successfully"}
 
-# Product Variant endpoints
-@router.post("/products/{product_id}/variants", response_model=product.ProductVariant)
-def create_product_variant(product_id: int, variant: product.ProductVariantCreate, db: Session = Depends(get_db)):
+# Product Variant endpoints (Admin only)
+@router.post("/products/{product_id}/variants", response_model=product.ProductVariant, status_code=status.HTTP_201_CREATED)
+def create_product_variant(
+    product_id: int,
+    variant: product.ProductVariantCreate,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
     # Verify product exists
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:
@@ -99,7 +122,12 @@ def create_product_variant(product_id: int, variant: product.ProductVariantCreat
     return db_variant
 
 @router.put("/variants/{variant_id}", response_model=product.ProductVariant)
-def update_product_variant(variant_id: int, variant: product.ProductVariantUpdate, db: Session = Depends(get_db)):
+def update_product_variant(
+    variant_id: int,
+    variant: product.ProductVariantUpdate,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
     db_variant = db.query(ProductVariant).filter(ProductVariant.id == variant_id).first()
     if not db_variant:
         raise HTTPException(status_code=404, detail="Variant not found")
@@ -112,7 +140,11 @@ def update_product_variant(variant_id: int, variant: product.ProductVariantUpdat
     return db_variant
 
 @router.delete("/variants/{variant_id}")
-def delete_product_variant(variant_id: int, db: Session = Depends(get_db)):
+def delete_product_variant(
+    variant_id: int,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
     db_variant = db.query(ProductVariant).filter(ProductVariant.id == variant_id).first()
     if not db_variant:
         raise HTTPException(status_code=404, detail="Variant not found")
@@ -129,12 +161,10 @@ def get_product_options(product_id: int, db: Session = Depends(get_db)):
     - Available variants with extra prices
     - Active recurring plans
     """
-    # Get product
     product_obj = db.query(Product).filter(Product.id == product_id).first()
     if not product_obj:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    # Get variants with attribute details
     variants = []
     for variant in product_obj.variants:
         if variant.attribute_value:
@@ -147,12 +177,10 @@ def get_product_options(product_id: int, db: Session = Depends(get_db)):
                 "extra_price": variant.extra_price
             })
     
-    # Get active recurring plans
     from app.models.recurring_plan import RecurringPlan
     plans = db.query(RecurringPlan).all()
     recurring_plans = []
     for plan in plans:
-        # Calculate duration in months
         duration_months = 1
         if plan.billing_period == "month":
             duration_months = 1

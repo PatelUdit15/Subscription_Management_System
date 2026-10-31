@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const axiosInstance = axios.create({
   baseURL: `${API_URL}/api`,
@@ -30,7 +30,13 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Only redirect to /login on 401 if request is NOT a login/signup attempt and user is not already on /login
+    if (
+      error.response?.status === 401 &&
+      !error.config?.url?.includes('/auth/login') &&
+      !error.config?.url?.includes('/auth/signup') &&
+      window.location.pathname !== '/login'
+    ) {
       localStorage.removeItem('access_token')
       window.location.href = '/login'
     }

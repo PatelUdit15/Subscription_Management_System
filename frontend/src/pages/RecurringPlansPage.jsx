@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
 import axiosInstance from '../api/axios'
 import './TaxesPage.css'
 
 function RecurringPlansPage() {
+  const { currentUser } = useAuth()
+  const isAdmin = currentUser?.role === 'admin'
+  const isInternal = currentUser?.role === 'internal'
+
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -56,6 +61,9 @@ function RecurringPlansPage() {
     if (formData.end_date && formData.start_date && formData.end_date < formData.start_date) {
       newErrors.end_date = 'End date cannot be earlier than start date'
     }
+    if (formData.auto_close_days === '' || parseInt(formData.auto_close_days) < 0) {
+      newErrors.auto_close_days = 'Auto-close days must be non-negative'
+    }
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -66,7 +74,7 @@ function RecurringPlansPage() {
 
     try {
       const payload = {
-        name: formData.name,
+        name: formData.name.trim(),
         price: parseFloat(formData.price) || 0,
         billing_period: formData.billing_period,
         min_quantity: parseInt(formData.min_quantity) || 1,
@@ -86,16 +94,21 @@ function RecurringPlansPage() {
         await axiosInstance.post('/recurring-plans', payload)
         showToast('Recurring plan created successfully!')
       }
-
-      fetchPlans()
       closeModal()
+      fetchPlans()
     } catch (error) {
       showToast(error.response?.data?.detail || 'Failed to save recurring plan', 'error')
     }
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this recurring plan?')) return
+    if (!isAdmin) {
+      showToast('Only administrators can delete recurring plans', 'error')
+      return
+    }
+    if (!window.confirm('Are you sure you want to delete this recurring plan?')) {
+      return
+    }
 
     try {
       await axiosInstance.delete(`/recurring-plans/${id}`)
@@ -107,6 +120,10 @@ function RecurringPlansPage() {
   }
 
   const openModal = (plan = null) => {
+    if (!isAdmin) {
+      showToast('Only administrators can configure recurring plans', 'error')
+      return
+    }
     if (plan) {
       setEditingPlan(plan)
       setFormData({
@@ -163,11 +180,29 @@ function RecurringPlansPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Recurring Plans</h1>
-          <p className="page-subtitle">Configure billing cycles, price, minimum quantity, and lifecycle policies</p>
+          <p className="page-subtitle">
+            {isInternal 
+              ? 'Operational view of recurring billing plans (Admin-configured)' 
+              : 'Configure billing cycles, price, minimum quantity, and lifecycle policies'}
+          </p>
         </div>
-        <button className="btn-primary" onClick={() => openModal()}>
-          + New Recurring Plan
-        </button>
+        {isAdmin ? (
+          <button className="btn-primary" onClick={() => openModal()}>
+            + New Recurring Plan
+          </button>
+        ) : (
+          <span style={{
+            padding: '0.55rem 1rem',
+            background: '#ecfdf5',
+            color: '#065f46',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            border: '1px solid #a7f3d0'
+          }}>
+            👁️ Operational View
+          </span>
+        )}
       </div>
 
       <div className="table-container">
@@ -183,14 +218,14 @@ function RecurringPlansPage() {
               <th>Closable</th>
               <th>Pausable</th>
               <th>Can Renew</th>
-              <th>Actions</th>
+              {isAdmin && <th>Actions</th>}
             </tr>
           </thead>
           <tbody>
             {plans.length === 0 ? (
               <tr>
-                <td colSpan="10" className="empty-state">
-                  No recurring plans found. Create your first plan to get started.
+                <td colSpan={isAdmin ? 10 : 9} className="empty-state">
+                  No recurring plans found. {isAdmin && 'Create your first plan to get started.'}
                 </td>
               </tr>
             ) : (
@@ -231,24 +266,26 @@ function RecurringPlansPage() {
                       {plan.can_renew ? 'Yes' : 'No'}
                     </span>
                   </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button 
-                        className="btn-icon btn-edit" 
-                        onClick={() => openModal(plan)}
-                        title="Edit"
-                      >
-                        ✏️
-                      </button>
-                      <button 
-                        className="btn-icon btn-delete" 
-                        onClick={() => handleDelete(plan.id)}
-                        title="Delete"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
+                  {isAdmin && (
+                    <td>
+                      <div className="action-buttons">
+                        <button 
+                          className="btn-icon btn-edit" 
+                          onClick={() => openModal(plan)}
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          className="btn-icon btn-delete" 
+                          onClick={() => handleDelete(plan.id)}
+                          title="Delete"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
@@ -256,7 +293,7 @@ function RecurringPlansPage() {
         </table>
       </div>
 
-      {showModal && (
+      {showModal && isAdmin && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
             <div className="modal-header">

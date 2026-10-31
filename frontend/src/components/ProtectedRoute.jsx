@@ -1,7 +1,8 @@
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, requiredRole }) => {
+const ProtectedRoute = ({ children, requiredRole, allowedRoles }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
@@ -39,17 +40,33 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Check role-based access
-  if (requiredRole) {
-    if (requiredRole === 'admin' && currentUser.role !== 'admin') {
-      // Non-admin trying to access admin routes
+  // Determine allowed roles
+  let permitted = allowedRoles;
+  if (!permitted && requiredRole) {
+    if (requiredRole === 'admin') {
+      // Back-office administration and operational workspace
+      permitted = ['admin', 'internal'];
+    } else if (requiredRole === 'admin_only') {
+      // Strictly administrator only
+      permitted = ['admin'];
+    } else if (requiredRole === 'portal') {
+      // Customer Portal is strictly for customer / subscriber users
+      permitted = ['portal'];
+    } else {
+      permitted = [requiredRole];
+    }
+  }
+
+  if (permitted && !permitted.includes(currentUser.role)) {
+    // If a customer tries to access admin / operational routes
+    if (currentUser.role === 'portal') {
       return <Navigate to="/shop" replace />;
     }
-    
-    if (requiredRole === 'portal' && currentUser.role === 'admin') {
-      // Admin trying to access customer routes
+    // If staff (internal user or admin) tries to access customer portal routes
+    if (currentUser.role === 'internal' || currentUser.role === 'admin') {
       return <Navigate to="/admin" replace />;
     }
+    return <Navigate to="/login" replace />;
   }
 
   return children;
