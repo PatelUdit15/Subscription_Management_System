@@ -19,11 +19,25 @@ const ShopProducts = () => {
     fetchProducts();
   }, []);
 
+  const getProductIcon = (product) => {
+    const name = (product?.name || '').toLowerCase();
+    if (name.includes('netflix') || name.includes('stream') || name.includes('video')) return '🎬';
+    if (name.includes('spotify') || name.includes('music') || name.includes('audio') || name.includes('song')) return '🎵';
+    if (name.includes('youtube') || name.includes('yt')) return '▶️';
+    if (name.includes('amazon') || name.includes('prime')) return '📦';
+    if (name.includes('cloud') || name.includes('storage')) return '☁️';
+    if (name.includes('crm') || name.includes('software')) return '💻';
+    if (product?.type === 'service') return '⚡';
+    if (product?.type === 'storable') return '📦';
+    return '✨';
+  };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const response = await axios.get('/products');
-      setProducts(response.data);
+      const activeProducts = (response.data || []).filter(p => p.is_active !== false);
+      setProducts(activeProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -396,7 +410,7 @@ const ShopProducts = () => {
                       cursor: 'pointer',
                       transition: 'background 0.2s ease'
                     }}>
-                    📦
+                    {getProductIcon(product)}
                   </div>
 
                   {/* Product Info */}

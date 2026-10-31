@@ -36,7 +36,9 @@ const CustomerHome = () => {
     try {
       setLoading(true);
       const response = await axios.get('/products');
-      setProducts(response.data || []);
+      // Fetch products directly from database tables, filtering for active items
+      const activeProducts = (response.data || []).filter(p => p.is_active !== false);
+      setProducts(activeProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -89,6 +91,19 @@ const CustomerHome = () => {
     } finally {
       setAddingProductId(null);
     }
+  };
+
+  const getProductIcon = (product) => {
+    const name = (product?.name || '').toLowerCase();
+    if (name.includes('netflix') || name.includes('stream') || name.includes('video')) return '🎬';
+    if (name.includes('spotify') || name.includes('music') || name.includes('audio') || name.includes('song')) return '🎵';
+    if (name.includes('youtube') || name.includes('yt')) return '▶️';
+    if (name.includes('amazon') || name.includes('prime')) return '📦';
+    if (name.includes('cloud') || name.includes('storage')) return '☁️';
+    if (name.includes('crm') || name.includes('software')) return '💻';
+    if (product?.type === 'service') return '⚡';
+    if (product?.type === 'storable') return '📦';
+    return '✨';
   };
 
   // Derive categories dynamically from database products
@@ -576,7 +591,7 @@ const CustomerHome = () => {
                     overflow: 'hidden'
                   }}
                 >
-                  <span>📦</span>
+                  <span>{getProductIcon(product)}</span>
                   {(product.product_type || product.type) && (
                     <span style={{
                       position: 'absolute',
@@ -604,7 +619,7 @@ const CustomerHome = () => {
                       color: '#2E2E2E',
                       fontSize: '1.2rem',
                       fontWeight: '700',
-                      marginBottom: '0.75rem',
+                      marginBottom: product.description ? '0.35rem' : '0.75rem',
                       fontFamily: 'Gabarito, sans-serif',
                       cursor: 'pointer',
                       transition: 'color 0.2s ease',
@@ -615,6 +630,21 @@ const CustomerHome = () => {
                   >
                     {product.name}
                   </h3>
+
+                  {product.description && (
+                    <p style={{
+                      color: '#6B6B6B',
+                      fontSize: '0.88rem',
+                      lineHeight: 1.4,
+                      marginBottom: '0.75rem',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {product.description}
+                    </p>
+                  )}
 
                   {/* Pricing and Billing Badge */}
                   <div style={{
