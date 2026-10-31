@@ -182,16 +182,7 @@ def verify_payment(
                         unit_price += variant.extra_price
                         variant_id = vid
             
-            # Calculate duration multiplier
-            duration_months = 1
-            if plan.billing_period == BillingPeriod.month:
-                duration_months = 1
-            elif plan.billing_period == BillingPeriod.year:
-                duration_months = 12
-            elif plan.billing_period == BillingPeriod.weeks:
-                duration_months = 0.25
-            
-            line_total = unit_price * duration_months * item.quantity
+            line_total = round(unit_price * item.quantity, 2)
             total_amount += line_total
             
             # Create Order Line

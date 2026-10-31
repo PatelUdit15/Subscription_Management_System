@@ -1,13 +1,10 @@
-try:
-    import razorpay
-except ImportError:
-    razorpay = None
+import razorpay
 import time
 from app.core.config import settings
 
 class PaymentService:
     def __init__(self):
-        if razorpay and settings.RAZORPAY_KEY_ID and settings.RAZORPAY_KEY_SECRET:
+        if settings.RAZORPAY_KEY_ID and settings.RAZORPAY_KEY_SECRET:
             self.client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
         else:
             self.client = None
@@ -47,7 +44,19 @@ class PaymentService:
                 'razorpay_signature': razorpay_signature
             })
             return True
-        except Exception:
+        except:
             return False
+    
+    def get_payment_details(self, payment_id: str):
+        """Get payment details"""
+        if not self.client:
+            return None
+        return self.client.payment.fetch(payment_id)
+    
+    def get_order_details(self, order_id: str):
+        """Get order details from Razorpay"""
+        if not self.client:
+            return None
+        return self.client.order.fetch(order_id)
 
 payment_service = PaymentService()
