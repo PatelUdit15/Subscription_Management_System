@@ -14,6 +14,7 @@ import CustomerPortalPage from './pages/CustomerPortalPage'
 import MyProfile from './pages/MyProfile'
 import MyOrders from './pages/MyOrders'
 import OrderDetail from './pages/OrderDetail'
+import CustomerInvoices from './pages/CustomerInvoices'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -22,129 +23,115 @@ function AppRoutes() {
   const { currentUser } = useAuth();
 
   return (
-    <>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={currentUser ? <Navigate to="/" replace /> : <Login />} />
-        <Route path="/signup" element={currentUser ? <Navigate to="/" replace /> : <Signup />} />
-        <Route path="/share/quotation/:id" element={<CustomerPortalPage />} />
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/login" element={currentUser ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/signup" element={currentUser ? <Navigate to="/" replace /> : <Signup />} />
+      <Route path="/share/quotation/:id" element={<CustomerPortalPage />} />
 
-        {/* Operational / Admin Routes - Accessible by both Admin and Internal Users */}
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminHome />
-            </ProtectedRoute>
-          }
-        />
+      {/* Admin Routes - Only accessible by admin/internal users */}
+      <Route
+        path="/admin/*"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminHome />
+          </ProtectedRoute>
+        }
+      />
 
-        {/* Customer / Shop Routes - Accessible by Portal / Customer users (and previewable by Admin/Internal) */}
-        <Route
-          path="/shop"
-          element={
-            <ProtectedRoute requiredRole="portal">
-              <CustomerHome />
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/shop/my-profile"
-          element={
-            <ProtectedRoute requiredRole="portal">
-              <MyProfile />
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/shop/my-orders"
-          element={
-            <ProtectedRoute requiredRole="portal">
-              <MyOrders />
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/shop/order/:orderId"
-          element={
-            <ProtectedRoute requiredRole="portal">
-              <OrderDetail />
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route path="/shop" element={<CustomerLayout />}>
-          <Route path="products" element={
-            <ProtectedRoute requiredRole="portal">
-              <ShopProducts />
-            </ProtectedRoute>
-          } />
-          <Route path="product/:id" element={
-            <ProtectedRoute requiredRole="portal">
-              <CustomerProductDetail />
-            </ProtectedRoute>
-          } />
-          <Route path="cart" element={
-            <ProtectedRoute requiredRole="portal">
-              <Cart />
-            </ProtectedRoute>
-          } />
-          <Route path="checkout" element={
-            <ProtectedRoute requiredRole="portal">
-              <Checkout />
-            </ProtectedRoute>
-          } />
-          <Route path="order-success/:orderId" element={
-            <ProtectedRoute requiredRole="portal">
-              <OrderSuccess />
-            </ProtectedRoute>
-          } />
-          <Route path="dashboard" element={
-            <ProtectedRoute requiredRole="portal">
-              <CustomerDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="orders" element={
-            <ProtectedRoute requiredRole="portal">
-              <CustomerDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="subscriptions" element={
-            <ProtectedRoute requiredRole="portal">
-              <CustomerDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="profile" element={
-            <ProtectedRoute requiredRole="portal">
-              <CustomerDashboard />
-            </ProtectedRoute>
-          } />
-        </Route>
+      {/* Customer/Shop Routes - All wrapped in CustomerLayout for consistent UI */}
+      <Route path="/shop" element={<CustomerLayout />}>
+        <Route index element={
+          <ProtectedRoute requiredRole="portal">
+            <CustomerHome />
+          </ProtectedRoute>
+        } />
+        <Route path="my-profile" element={
+          <ProtectedRoute requiredRole="portal">
+            <MyProfile />
+          </ProtectedRoute>
+        } />
+        <Route path="my-orders" element={
+          <ProtectedRoute requiredRole="portal">
+            <MyOrders />
+          </ProtectedRoute>
+        } />
+        <Route path="order/:orderId" element={
+          <ProtectedRoute requiredRole="portal">
+            <OrderDetail />
+          </ProtectedRoute>
+        } />
+        <Route path="products" element={
+          <ProtectedRoute requiredRole="portal">
+            <ShopProducts />
+          </ProtectedRoute>
+        } />
+        <Route path="product/:id" element={
+          <ProtectedRoute requiredRole="portal">
+            <CustomerProductDetail />
+          </ProtectedRoute>
+        } />
+        <Route path="cart" element={
+          <ProtectedRoute requiredRole="portal">
+            <Cart />
+          </ProtectedRoute>
+        } />
+        <Route path="checkout" element={
+          <ProtectedRoute requiredRole="portal">
+            <Checkout />
+          </ProtectedRoute>
+        } />
+        <Route path="order-success/:orderId" element={
+          <ProtectedRoute requiredRole="portal">
+            <OrderSuccess />
+          </ProtectedRoute>
+        } />
+        <Route path="dashboard" element={
+          <ProtectedRoute requiredRole="portal">
+            <CustomerDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="orders" element={
+          <ProtectedRoute requiredRole="portal">
+            <CustomerDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="subscriptions" element={
+          <ProtectedRoute requiredRole="portal">
+            <CustomerDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="profile" element={
+          <ProtectedRoute requiredRole="portal">
+            <CustomerDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="invoices" element={
+          <ProtectedRoute requiredRole="portal">
+            <CustomerDashboard />
+          </ProtectedRoute>
+        } />
+      </Route>
 
-        {/* Default Route - Redirect based on role or to login */}
-        <Route
-          path="/"
-          element={
-            currentUser ? (
-              currentUser.role === 'admin' || currentUser.role === 'internal' ? (
-                <Navigate to="/admin" replace />
-              ) : (
-                <Navigate to="/shop" replace />
-              )
+      {/* Default Route - Redirect based on role or to login */}
+      <Route
+        path="/"
+        element={
+          currentUser ? (
+            currentUser.role === 'admin' || currentUser.role === 'internal' ? (
+              <Navigate to="/admin" replace />
             ) : (
-              <Navigate to="/login" replace />
+              <Navigate to="/shop" replace />
             )
-          }
-        />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
 
-        {/* Catch all - redirect to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-
-    </>
+      {/* Catch all - redirect to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 

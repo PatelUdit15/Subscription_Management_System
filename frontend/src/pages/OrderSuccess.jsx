@@ -136,7 +136,7 @@ const OrderSuccess = () => {
                   color: '#22c55e',
                   fontWeight: '700'
                 }}>
-                  ${order.total_amount.toFixed(2)}
+                  ₹{order.total_amount.toFixed(2)}
                 </div>
               </div>
             </div>
@@ -169,8 +169,8 @@ const OrderSuccess = () => {
                       {line.plan_name} × {line.quantity}
                     </div>
                   </div>
-                  <div style={{ color: '#18181b', fontWeight: '600' }}>
-                    ${line.total_price.toFixed(2)}
+                  <div style={{ color: '#875A7B', fontWeight: '700' }}>
+                    ₹{line.total_price.toFixed(2)}
                   </div>
                 </div>
               ))}
@@ -244,21 +244,22 @@ const OrderSuccess = () => {
           <button
             onClick={() => navigate('/shop/orders')}
             style={{
-              background: '#18181b',
+              background: '#875A7B',
               color: 'white',
               border: 'none',
               padding: '1rem 2rem',
               borderRadius: '8px',
               fontSize: '1rem',
-              fontWeight: '600',
+              fontWeight: '700',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem'
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(135, 90, 123, 0.25)'
             }}
-            onMouseEnter={(e) => e.target.style.background = '#27272a'}
-            onMouseLeave={(e) => e.target.style.background = '#18181b'}
+            onMouseEnter={(e) => e.target.style.background = '#A6789C'}
+            onMouseLeave={(e) => e.target.style.background = '#875A7B'}
           >
             <span>📋</span>
             <span>View My Orders</span>

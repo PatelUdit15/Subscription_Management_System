@@ -41,15 +41,18 @@ const Checkout = () => {
   };
 
   const calculateSubtotal = () => {
-    return cartItems.reduce((sum, item) => sum + item.finalPrice, 0);
+    return cartItems.reduce((sum, item) => {
+      const price = item.subtotal ?? (item.unitPrice ? item.unitPrice * (item.quantity || 1) : item.finalPrice);
+      return sum + price;
+    }, 0);
   };
 
   const calculateTax = () => {
-    return (calculateSubtotal() - discount) * 0.10;
+    return Math.round((calculateSubtotal() - discount) * 0.18 * 100) / 100;
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() - discount + calculateTax();
+    return Math.round((calculateSubtotal() - discount + calculateTax()) * 100) / 100;
   };
 
   const applyPromoCode = () => {
@@ -144,7 +147,7 @@ const Checkout = () => {
                   width: '48px',
                   height: '48px',
                   borderRadius: '50%',
-                  background: currentStep >= step.number ? '#18181b' : '#e5e7eb',
+                  background: currentStep >= step.number ? '#875A7B' : '#e5e7eb',
                   color: currentStep >= step.number ? 'white' : '#71717a',
                   display: 'flex',
                   alignItems: 'center',
@@ -160,7 +163,7 @@ const Checkout = () => {
                   marginTop: '0.5rem',
                   fontSize: '0.85rem',
                   fontWeight: currentStep === step.number ? '600' : '400',
-                  color: currentStep >= step.number ? '#18181b' : '#71717a'
+                  color: currentStep >= step.number ? '#875A7B' : '#71717a'
                 }}>
                   {step.label}
                 </div>
@@ -170,7 +173,7 @@ const Checkout = () => {
                 <div style={{
                   flex: 1,
                   height: '3px',
-                  background: currentStep > step.number ? '#18181b' : '#e5e7eb',
+                  background: currentStep > step.number ? '#875A7B' : '#e5e7eb',
                   margin: '0 1rem',
                   marginBottom: '2rem',
                   transition: 'all 0.3s ease'
@@ -221,7 +224,7 @@ const Checkout = () => {
                 width: '48px',
                 height: '48px',
                 borderRadius: '50%',
-                background: currentStep >= step.number ? '#18181b' : '#e5e7eb',
+                background: currentStep >= step.number ? '#875A7B' : '#e5e7eb',
                 color: currentStep >= step.number ? 'white' : '#71717a',
                 display: 'flex',
                 alignItems: 'center',
@@ -237,7 +240,7 @@ const Checkout = () => {
                 marginTop: '0.5rem',
                 fontSize: '0.85rem',
                 fontWeight: currentStep === step.number ? '600' : '400',
-                color: currentStep >= step.number ? '#18181b' : '#71717a'
+                color: currentStep >= step.number ? '#875A7B' : '#71717a'
               }}>
                 {step.label}
               </div>
@@ -247,7 +250,7 @@ const Checkout = () => {
               <div style={{
                 flex: 1,
                 height: '3px',
-                background: currentStep > step.number ? '#18181b' : '#e5e7eb',
+                background: currentStep > step.number ? '#875A7B' : '#e5e7eb',
                 margin: '0 1rem',
                 marginBottom: '2rem',
                 transition: 'all 0.3s ease'
@@ -441,7 +444,7 @@ const Checkout = () => {
                 fontSize: '0.9rem',
                 fontWeight: '600'
               }}>
-                ✓ Code Applied! You saved ${discount.toFixed(2)}
+                ✓ Code Applied! You saved ₹{discount.toFixed(2)}
               </div>
             )}
           </div>
@@ -451,25 +454,26 @@ const Checkout = () => {
             disabled={loading}
             style={{
               width: '100%',
-              background: loading ? '#71717a' : '#18181b',
+              background: loading ? '#71717a' : '#875A7B',
               color: 'white',
               border: 'none',
               padding: '1rem',
               borderRadius: '8px',
               fontSize: '1.1rem',
-              fontWeight: '600',
+              fontWeight: '700',
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.5rem'
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(135, 90, 123, 0.25)'
             }}
             onMouseEnter={(e) => {
-              if (!loading) e.target.style.background = '#27272a';
+              if (!loading) e.target.style.background = '#A6789C';
             }}
             onMouseLeave={(e) => {
-              if (!loading) e.target.style.background = '#18181b';
+              if (!loading) e.target.style.background = '#875A7B';
             }}
           >
             <span>Proceed to Payment</span>
@@ -515,12 +519,17 @@ const Checkout = () => {
                   <div style={{ color: '#18181b', fontWeight: '600', marginBottom: '0.25rem' }}>
                     {item.productName}
                   </div>
+                  {item.variants && item.variants.length > 0 && (
+                    <div style={{ color: '#875A7B', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.2rem' }}>
+                      {item.variants.map(v => `${v.attribute_name}: ${v.value_name}`).join(', ')}
+                    </div>
+                  )}
                   <div style={{ color: '#71717a', fontSize: '0.85rem' }}>
                     {item.planName} × {item.quantity}
                   </div>
                 </div>
-                <div style={{ color: '#18181b', fontWeight: '600' }}>
-                  ${item.finalPrice.toFixed(2)}
+                <div style={{ color: '#875A7B', fontWeight: '700' }}>
+                  ₹{(item.subtotal ?? (item.unitPrice ? item.unitPrice * (item.quantity || 1) : item.finalPrice)).toFixed(2)}
                 </div>
               </div>
             ))}
@@ -537,22 +546,22 @@ const Checkout = () => {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: '#71717a' }}>Subtotal</span>
-              <span style={{ color: '#18181b', fontWeight: '600' }}>
-                ${calculateSubtotal().toFixed(2)}
+              <span style={{ color: '#2E2E2E', fontWeight: '600' }}>
+                ₹{calculateSubtotal().toFixed(2)}
               </span>
             </div>
             {discount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#10b981' }}>Discount</span>
                 <span style={{ color: '#10b981', fontWeight: '600' }}>
-                  -${discount.toFixed(2)}
+                  -₹{discount.toFixed(2)}
                 </span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#71717a' }}>Tax (10%)</span>
-              <span style={{ color: '#18181b', fontWeight: '600' }}>
-                ${calculateTax().toFixed(2)}
+              <span style={{ color: '#71717a' }}>Estimated Tax (18% GST)</span>
+              <span style={{ color: '#1e40af', fontWeight: '600' }}>
+                +₹{calculateTax().toFixed(2)}
               </span>
             </div>
           </div>
@@ -560,21 +569,23 @@ const Checkout = () => {
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
+            marginBottom: '1.5rem',
             fontSize: '1.25rem'
           }}>
             <span style={{
               fontFamily: 'Gabarito, sans-serif',
-              color: '#18181b',
+              color: '#2E2E2E',
               fontWeight: '700'
             }}>
               Total
             </span>
             <span style={{
               fontFamily: 'Gabarito, sans-serif',
-              color: '#18181b',
-              fontWeight: '700'
+              color: '#875A7B',
+              fontWeight: '700',
+              fontSize: '1.5rem'
             }}>
-              ${calculateTotal().toFixed(2)}
+              ₹{calculateTotal().toFixed(2)}
             </span>
           </div>
         </div>

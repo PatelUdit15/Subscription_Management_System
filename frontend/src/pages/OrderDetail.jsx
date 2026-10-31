@@ -29,182 +29,167 @@ const OrderDetail = () => {
   return (
     <div style={{
       fontFamily: 'Quicksand, sans-serif',
-      background: '#1a1a1a',
+      background: '#F6F6F6',
       minHeight: '100vh'
     }}>
-      {/* Navigation Bar */}
-      <nav style={{
-        background: '#2a2a2a',
-        border: '2px solid #d97706',
-        padding: '1rem 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+      {/* Page Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #875A7B 0%, #A6789C 100%)',
+        padding: '2.5rem 2rem',
+        color: 'white'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-          <div style={{
-            padding: '0.75rem 1.5rem',
-            border: '2px solid #d97706',
-            borderRadius: '8px',
-            color: '#d97706',
-            fontWeight: '600',
-            fontSize: '1.1rem',
-            fontFamily: 'Gabarito, sans-serif',
-            cursor: 'pointer'
-          }}
-          onClick={() => navigate('/shop')}>
-            Company Logo
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h1 style={{
+                fontFamily: 'Gabarito, sans-serif',
+                fontSize: '2rem',
+                fontWeight: '700',
+                margin: 0
+              }}>
+                Order Details
+              </h1>
+              <p style={{ opacity: 0.9, marginTop: '0.25rem', fontSize: '0.95rem' }}>
+                Order #{orderId}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => navigate('/shop/my-orders')}
+                style={{
+                  padding: '0.6rem 1.5rem',
+                  background: 'rgba(255,255,255,0.15)',
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  fontFamily: 'Quicksand, sans-serif',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  backdropFilter: 'blur(10px)'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.25)'}
+                onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.15)'}
+              >
+                ← Back to Orders
+              </button>
+              <button
+                onClick={() => navigate('/shop')}
+                style={{
+                  padding: '0.6rem 1.5rem',
+                  background: 'rgba(255,255,255,0.15)',
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  fontFamily: 'Quicksand, sans-serif',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  backdropFilter: 'blur(10px)'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.25)'}
+                onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.15)'}
+              >
+                Home
+              </button>
+            </div>
           </div>
-
-          <button onClick={() => navigate('/shop')} style={{
-            background: 'transparent',
-            color: '#d97706',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}>
-            Home
-          </button>
-
-          <button onClick={() => navigate('/shop/products')} style={{
-            background: 'transparent',
-            color: '#d97706',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}>
-            Shop
-          </button>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => navigate('/shop/cart')} style={{
-            padding: '0.75rem 1.5rem',
-            background: 'transparent',
-            color: '#d97706',
-            border: '2px solid #d97706',
-            borderRadius: '8px',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}>
-            Cart
-          </button>
-
-          <button onClick={() => navigate('/shop/my-profile')} style={{
-            padding: '0.75rem 1.5rem',
-            background: '#d97706',
-            color: '#1a1a1a',
-            border: '2px solid #d97706',
-            borderRadius: '8px',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}>
-            My Profile
-          </button>
-        </div>
-      </nav>
+      </div>
 
       {/* Main Content */}
       <div style={{
         maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '3rem 2rem'
+        margin: '-1.5rem auto 0',
+        padding: '0 2rem 3rem',
+        position: 'relative',
+        zIndex: 2
       }}>
-        {/* Back Button */}
-        <button
-          onClick={() => navigate('/shop/my-orders')}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: 'transparent',
-            color: '#d97706',
-            border: '2px solid #d97706',
-            borderRadius: '8px',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            marginBottom: '2rem'
-          }}
-        >
-          ← Back to Orders
-        </button>
-
         <div style={{
-          background: '#2a2a2a',
-          border: '2px solid #d97706',
-          borderRadius: '12px',
-          padding: '2rem'
+          background: 'white',
+          border: '1px solid #EADBE7',
+          borderRadius: '16px',
+          padding: '2.5rem',
+          boxShadow: '0 4px 12px rgba(46, 46, 46, 0.08)'
         }}>
           {loading ? (
             <div style={{
               textAlign: 'center',
-              color: '#d97706',
+              color: '#6B6B6B',
               padding: '3rem',
-              fontSize: '1.2rem'
+              fontSize: '1rem'
             }}>
               Loading order details...
             </div>
           ) : !order ? (
             <div style={{
               textAlign: 'center',
-              color: '#d97706',
-              padding: '3rem',
-              fontSize: '1.2rem'
+              padding: '3rem'
             }}>
-              Order not found
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+              <h3 style={{
+                color: '#2E2E2E',
+                fontSize: '1.3rem',
+                fontFamily: 'Gabarito, sans-serif',
+                marginBottom: '0.5rem'
+              }}>
+                Order not found
+              </h3>
+              <p style={{ color: '#6B6B6B' }}>
+                This order may not exist or you may not have access to it.
+              </p>
             </div>
           ) : (
             <>
               {/* Header */}
               <div style={{
                 marginBottom: '2rem',
-                paddingBottom: '1rem',
-                borderBottom: '2px solid #d97706'
+                paddingBottom: '1.25rem',
+                borderBottom: '2px solid #EADBE7'
               }}>
-                <h1 style={{
-                  color: '#d97706',
-                  fontSize: '1.8rem',
-                  fontWeight: '600',
-                  fontFamily: 'Gabarito, sans-serif',
-                  marginBottom: '0.5rem'
-                }}>
-                  Order Details
-                </h1>
-                <div style={{
-                  color: '#d97706',
-                  fontSize: '1.1rem',
-                  opacity: 0.8
-                }}>
-                  Order #{order.id}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                  <h2 style={{
+                    color: '#2E2E2E',
+                    fontSize: '1.5rem',
+                    fontWeight: '700',
+                    fontFamily: 'Gabarito, sans-serif',
+                    margin: 0
+                  }}>
+                    Order #{order.id}
+                  </h2>
+                  <span style={{
+                    padding: '0.4rem 1rem',
+                    background: '#dcfce7',
+                    color: '#166534',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    textTransform: 'capitalize'
+                  }}>
+                    {order.status}
+                  </span>
                 </div>
               </div>
 
-              {/* Order Info */}
+              {/* Order Info Grid */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: '2rem',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '1.5rem',
                 marginBottom: '2rem'
               }}>
-                <div>
-                  <div style={{
-                    color: '#d97706',
-                    fontSize: '0.9rem',
-                    opacity: 0.7,
-                    marginBottom: '0.5rem'
-                  }}>
+                <div style={{
+                  background: '#F6F6F6',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  border: '1px solid #EADBE7'
+                }}>
+                  <div style={{ color: '#6B6B6B', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.5rem' }}>
                     Order Date
                   </div>
-                  <div style={{
-                    color: '#d97706',
-                    fontSize: '1.1rem',
-                    fontWeight: '600'
-                  }}>
+                  <div style={{ color: '#2E2E2E', fontSize: '1.05rem', fontWeight: '600' }}>
                     {new Date(order.created_at).toLocaleDateString('en-US', {
                       month: 'long',
                       day: 'numeric',
@@ -213,55 +198,44 @@ const OrderDetail = () => {
                   </div>
                 </div>
 
-                <div>
-                  <div style={{
-                    color: '#d97706',
-                    fontSize: '0.9rem',
-                    opacity: 0.7,
-                    marginBottom: '0.5rem'
-                  }}>
+                <div style={{
+                  background: '#F6F6F6',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  border: '1px solid #EADBE7'
+                }}>
+                  <div style={{ color: '#6B6B6B', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.5rem' }}>
                     Status
                   </div>
-                  <div style={{
-                    color: '#d97706',
-                    fontSize: '1.1rem',
-                    fontWeight: '600',
-                    textTransform: 'capitalize'
-                  }}>
+                  <div style={{ color: '#2E2E2E', fontSize: '1.05rem', fontWeight: '600', textTransform: 'capitalize' }}>
                     {order.status}
                   </div>
                 </div>
 
-                <div>
-                  <div style={{
-                    color: '#d97706',
-                    fontSize: '0.9rem',
-                    opacity: 0.7,
-                    marginBottom: '0.5rem'
-                  }}>
+                <div style={{
+                  background: '#F6F6F6',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  border: '1px solid #EADBE7'
+                }}>
+                  <div style={{ color: '#6B6B6B', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.5rem' }}>
                     Shipping Address
                   </div>
-                  <div style={{
-                    color: '#d97706',
-                    fontSize: '1rem'
-                  }}>
+                  <div style={{ color: '#2E2E2E', fontSize: '0.95rem', lineHeight: 1.5 }}>
                     {order.shipping_address || 'N/A'}
                   </div>
                 </div>
 
-                <div>
-                  <div style={{
-                    color: '#d97706',
-                    fontSize: '0.9rem',
-                    opacity: 0.7,
-                    marginBottom: '0.5rem'
-                  }}>
+                <div style={{
+                  background: '#F6F6F6',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  border: '1px solid #EADBE7'
+                }}>
+                  <div style={{ color: '#6B6B6B', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.5rem' }}>
                     Billing Address
                   </div>
-                  <div style={{
-                    color: '#d97706',
-                    fontSize: '1rem'
-                  }}>
+                  <div style={{ color: '#2E2E2E', fontSize: '0.95rem', lineHeight: 1.5 }}>
                     {order.billing_address || 'N/A'}
                   </div>
                 </div>
@@ -271,17 +245,17 @@ const OrderDetail = () => {
               <div style={{
                 marginTop: '2rem',
                 paddingTop: '2rem',
-                borderTop: '2px solid #d97706'
+                borderTop: '2px solid #EADBE7'
               }}>
-                <h2 style={{
-                  color: '#d97706',
-                  fontSize: '1.3rem',
-                  fontWeight: '600',
+                <h3 style={{
+                  color: '#875A7B',
+                  fontSize: '1.2rem',
+                  fontWeight: '700',
                   fontFamily: 'Gabarito, sans-serif',
                   marginBottom: '1.5rem'
                 }}>
                   Order Items
-                </h2>
+                </h3>
 
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{
@@ -290,50 +264,50 @@ const OrderDetail = () => {
                   }}>
                     <thead>
                       <tr style={{
-                        borderBottom: '2px solid #d97706'
+                        borderBottom: '2px solid #EADBE7'
                       }}>
                         <th style={{
                           padding: '1rem',
                           textAlign: 'left',
-                          color: '#d97706',
-                          fontSize: '1rem',
-                          fontWeight: '600'
+                          color: '#875A7B',
+                          fontSize: '0.9rem',
+                          fontWeight: '700'
                         }}>
                           Product
                         </th>
                         <th style={{
                           padding: '1rem',
                           textAlign: 'center',
-                          color: '#d97706',
-                          fontSize: '1rem',
-                          fontWeight: '600'
+                          color: '#875A7B',
+                          fontSize: '0.9rem',
+                          fontWeight: '700'
                         }}>
                           Plan
                         </th>
                         <th style={{
                           padding: '1rem',
                           textAlign: 'center',
-                          color: '#d97706',
-                          fontSize: '1rem',
-                          fontWeight: '600'
+                          color: '#875A7B',
+                          fontSize: '0.9rem',
+                          fontWeight: '700'
                         }}>
                           Quantity
                         </th>
                         <th style={{
                           padding: '1rem',
                           textAlign: 'right',
-                          color: '#d97706',
-                          fontSize: '1rem',
-                          fontWeight: '600'
+                          color: '#875A7B',
+                          fontSize: '0.9rem',
+                          fontWeight: '700'
                         }}>
                           Unit Price
                         </th>
                         <th style={{
                           padding: '1rem',
                           textAlign: 'right',
-                          color: '#d97706',
-                          fontSize: '1rem',
-                          fontWeight: '600'
+                          color: '#875A7B',
+                          fontSize: '0.9rem',
+                          fontWeight: '700'
                         }}>
                           Total
                         </th>
@@ -344,49 +318,47 @@ const OrderDetail = () => {
                         <tr
                           key={line.id}
                           style={{
-                            borderBottom: index < order.order_lines.length - 1 ? '1px solid #d97706' : 'none'
+                            borderBottom: index < order.order_lines.length - 1 ? '1px solid #EADBE7' : 'none'
                           }}
                         >
                           <td style={{
                             padding: '1rem',
-                            color: '#d97706',
-                            fontSize: '1rem'
+                            color: '#2E2E2E',
+                            fontWeight: '600'
                           }}>
                             {line.product_name}
                           </td>
                           <td style={{
                             padding: '1rem',
                             textAlign: 'center',
-                            color: '#d97706',
-                            fontSize: '0.9rem',
-                            opacity: 0.8
+                            color: '#6B6B6B',
+                            fontSize: '0.9rem'
                           }}>
                             {line.plan_name}
                           </td>
                           <td style={{
                             padding: '1rem',
                             textAlign: 'center',
-                            color: '#d97706',
-                            fontSize: '1rem'
+                            color: '#2E2E2E',
+                            fontWeight: '600'
                           }}>
                             {line.quantity}
                           </td>
                           <td style={{
                             padding: '1rem',
                             textAlign: 'right',
-                            color: '#d97706',
-                            fontSize: '1rem'
+                            color: '#2E2E2E'
                           }}>
-                            ${line.unit_price?.toFixed(2)}
+                            ₹{line.unit_price?.toFixed(2)}
                           </td>
                           <td style={{
                             padding: '1rem',
                             textAlign: 'right',
-                            color: '#d97706',
-                            fontSize: '1rem',
-                            fontWeight: '600'
+                            color: '#2E2E2E',
+                            fontWeight: '700',
+                            fontFamily: 'Gabarito, sans-serif'
                           }}>
-                            ${line.total_price?.toFixed(2)}
+                            ₹{line.total_price?.toFixed(2)}
                           </td>
                         </tr>
                       ))}
@@ -397,8 +369,8 @@ const OrderDetail = () => {
                 {/* Total */}
                 <div style={{
                   marginTop: '2rem',
-                  paddingTop: '1rem',
-                  borderTop: '2px solid #d97706',
+                  paddingTop: '1.25rem',
+                  borderTop: '2px solid #EADBE7',
                   display: 'flex',
                   justifyContent: 'flex-end'
                 }}>
@@ -408,20 +380,19 @@ const OrderDetail = () => {
                     gap: '2rem'
                   }}>
                     <span style={{
-                      color: '#d97706',
-                      fontSize: '1.3rem',
-                      fontWeight: '600',
-                      fontFamily: 'Gabarito, sans-serif'
+                      color: '#6B6B6B',
+                      fontSize: '1.1rem',
+                      fontWeight: '600'
                     }}>
                       Total:
                     </span>
                     <span style={{
-                      color: '#d97706',
+                      color: '#875A7B',
                       fontSize: '1.8rem',
                       fontWeight: '700',
                       fontFamily: 'Gabarito, sans-serif'
                     }}>
-                      ${order.total_amount?.toFixed(2)}
+                      ₹{order.total_amount?.toFixed(2)}
                     </span>
                   </div>
                 </div>

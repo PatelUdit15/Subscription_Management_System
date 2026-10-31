@@ -31,18 +31,7 @@ const ShopProducts = () => {
     }
   };
 
-  const handleLogout = () => {
-    if (confirm('Are you sure you want to sign out?')) {
-      logout();
-      navigate('/login');
-    }
-  };
-
   const handleQuickAddToCart = (product) => {
-    // For quick add, use default plan (first one, preferably monthly)
-    // and no variants, quantity 1
-    
-    // We need to fetch the product's plans first
     axios.get(`/products/${product.id}/options`)
       .then(response => {
         const { recurring_plans } = response.data;
@@ -52,7 +41,6 @@ const ShopProducts = () => {
           return;
         }
         
-        // Select monthly plan if available, otherwise first plan
         const monthlyPlan = recurring_plans.find(p => p.billing_period === 'month');
         const selectedPlan = monthlyPlan || recurring_plans[0];
         
@@ -63,19 +51,19 @@ const ShopProducts = () => {
           planId: selectedPlan.id,
           planName: selectedPlan.name,
           quantity: 1,
-          finalPrice: product.base_price * selectedPlan.duration_months,
+          unitPrice: product.base_price,
+          subtotal: product.base_price,
+          taxAmount: Math.round(product.base_price * 0.18 * 100) / 100,
+          finalPrice: Math.round(product.base_price * 1.18 * 100) / 100,
           addedAt: new Date().toISOString()
         };
 
-        // Get existing cart
         const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
         existingCart.push(cartItem);
         localStorage.setItem('cart', JSON.stringify(existingCart));
 
-        // Update cart count
         window.dispatchEvent(new Event('storage'));
 
-        // Show toast
         setToastMessage(`${product.name} added to cart!`);
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
@@ -97,9 +85,9 @@ const ShopProducts = () => {
       const matchesCategory = selectedCategory === 'all' || product.product_type === selectedCategory;
       
       let matchesPrice = true;
-      if (priceRange === 'under50') matchesPrice = product.base_price < 50;
-      else if (priceRange === '50to100') matchesPrice = product.base_price >= 50 && product.base_price <= 100;
-      else if (priceRange === 'over100') matchesPrice = product.base_price > 100;
+      if (priceRange === 'under500') matchesPrice = product.base_price < 500;
+      else if (priceRange === '500to1000') matchesPrice = product.base_price >= 500 && product.base_price <= 1000;
+      else if (priceRange === 'over1000') matchesPrice = product.base_price > 1000;
       
       return matchesSearch && matchesCategory && matchesPrice;
     })
@@ -112,8 +100,8 @@ const ShopProducts = () => {
   return (
     <div style={{
       fontFamily: 'Quicksand, sans-serif',
-      background: '#1a1a1a',
-      minHeight: '100vh'
+      background: '#F6F6F6',
+      minHeight: 'calc(100vh - 200px)'
     }}>
       {/* Toast Notification */}
       {showToast && (
@@ -121,10 +109,10 @@ const ShopProducts = () => {
           position: 'fixed',
           top: '100px',
           right: '2rem',
-          background: '#10b981',
+          background: '#16a34a',
           color: 'white',
           padding: '1rem 1.5rem',
-          borderRadius: '8px',
+          borderRadius: '10px',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
           zIndex: 9999,
           fontFamily: 'Quicksand, sans-serif',
@@ -139,193 +127,120 @@ const ShopProducts = () => {
         </div>
       )}
 
-      {/* Navigation Bar */}
-      <nav style={{
-        background: '#2a2a2a',
-        border: '2px solid #d97706',
-        padding: '1rem 2rem',
+      {/* Main Content - no standalone nav, using CustomerLayout */}
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: '2rem',
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+        gap: '2rem'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-          <div style={{
-            padding: '0.75rem 1.5rem',
-            border: '2px solid #d97706',
-            borderRadius: '8px',
-            color: '#d97706',
-            fontWeight: '600',
-            fontSize: '1.1rem',
-            fontFamily: 'Gabarito, sans-serif',
-            cursor: 'pointer'
-          }}
-          onClick={() => navigate('/shop')}>
-            Company Logo
-          </div>
-
-          <button onClick={() => navigate('/shop')} style={{
-            background: 'transparent',
-            color: '#d97706',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}>
-            Home
-          </button>
-
-          <button onClick={() => navigate('/shop/products')} style={{
-            background: 'transparent',
-            color: '#d97706',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            textDecoration: 'underline'
-          }}>
-            Shop
-          </button>
-
-          <button onClick={() => navigate('/shop/dashboard')} style={{
-            background: 'transparent',
-            color: '#d97706',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}>
-            My Account
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => navigate('/shop/cart')} style={{
-            padding: '0.75rem 1.5rem',
-            background: 'transparent',
-            color: '#d97706',
-            border: '2px solid #d97706',
-            borderRadius: '8px',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}>
-            Cart
-          </button>
-
-          <button onClick={() => navigate('/shop/my-profile')} style={{
-            padding: '0.75rem 1.5rem',
-            background: 'transparent',
-            color: '#d97706',
-            border: '2px solid #d97706',
-            borderRadius: '8px',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}>
-            My Profile
-          </button>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <div style={{ display: 'flex', minHeight: 'calc(100vh - 100px)' }}>
         {/* Sidebar */}
         <div style={{
-          width: '250px',
-          background: '#2a2a2a',
-          border: '2px solid #d97706',
-          borderTop: 'none',
-          padding: '2rem 1.5rem'
+          width: '260px',
+          flexShrink: 0
         }}>
-          {/* Category Filter */}
-          <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{
-              color: '#d97706',
-              fontSize: '1.2rem',
-              fontWeight: '600',
-              marginBottom: '1rem',
-              fontFamily: 'Gabarito, sans-serif'
-            }}>
-              Category
-            </h3>
-            {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '0.75rem 1rem',
-                  background: selectedCategory === category ? '#d97706' : 'transparent',
-                  color: selectedCategory === category ? '#1a1a1a' : '#d97706',
-                  border: '1px solid #d97706',
-                  borderRadius: '6px',
-                  marginBottom: '0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '0.95rem',
-                  fontWeight: '500',
-                  textTransform: 'capitalize'
-                }}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '1.5rem',
+            border: '1px solid #EADBE7',
+            boxShadow: '0 2px 8px rgba(46, 46, 46, 0.05)',
+            position: 'sticky',
+            top: '100px'
+          }}>
+            {/* Category Filter */}
+            <div style={{ marginBottom: '2rem' }}>
+              <h3 style={{
+                color: '#875A7B',
+                fontSize: '1.1rem',
+                fontWeight: '700',
+                marginBottom: '1rem',
+                fontFamily: 'Gabarito, sans-serif'
+              }}>
+                Category
+              </h3>
+              {categories.map(category => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '0.65rem 1rem',
+                    background: selectedCategory === category ? '#875A7B' : 'transparent',
+                    color: selectedCategory === category ? 'white' : '#2E2E2E',
+                    border: '1px solid #EADBE7',
+                    borderRadius: '8px',
+                    marginBottom: '0.4rem',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: selectedCategory === category ? '600' : '500',
+                    fontFamily: 'Quicksand, sans-serif',
+                    textTransform: 'capitalize',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
 
-          {/* Price Range Filter */}
-          <div>
-            <h3 style={{
-              color: '#d97706',
-              fontSize: '1.2rem',
-              fontWeight: '600',
-              marginBottom: '1rem',
-              fontFamily: 'Gabarito, sans-serif'
-            }}>
-              Price Range
-            </h3>
-            {[
-              { value: 'all', label: 'All Prices' },
-              { value: 'under50', label: 'Under $50' },
-              { value: '50to100', label: '$50 - $100' },
-              { value: 'over100', label: 'Over $100' }
-            ].map(range => (
-              <button
-                key={range.value}
-                onClick={() => setPriceRange(range.value)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '0.75rem 1rem',
-                  background: priceRange === range.value ? '#d97706' : 'transparent',
-                  color: priceRange === range.value ? '#1a1a1a' : '#d97706',
-                  border: '1px solid #d97706',
-                  borderRadius: '6px',
-                  marginBottom: '0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '0.95rem',
-                  fontWeight: '500'
-                }}
-              >
-                {range.label}
-              </button>
-            ))}
+            {/* Price Range Filter */}
+            <div>
+              <h3 style={{
+                color: '#875A7B',
+                fontSize: '1.1rem',
+                fontWeight: '700',
+                marginBottom: '1rem',
+                fontFamily: 'Gabarito, sans-serif'
+              }}>
+                Price Range
+              </h3>
+              {[
+                { value: 'all', label: 'All Prices' },
+                { value: 'under500', label: 'Under ₹500' },
+                { value: '500to1000', label: '₹500 - ₹1,000' },
+                { value: 'over1000', label: 'Over ₹1,000' }
+              ].map(range => (
+                <button
+                  key={range.value}
+                  onClick={() => setPriceRange(range.value)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '0.65rem 1rem',
+                    background: priceRange === range.value ? '#875A7B' : 'transparent',
+                    color: priceRange === range.value ? 'white' : '#2E2E2E',
+                    border: '1px solid #EADBE7',
+                    borderRadius: '8px',
+                    marginBottom: '0.4rem',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: priceRange === range.value ? '600' : '500',
+                    fontFamily: 'Quicksand, sans-serif',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {range.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Products Area */}
-        <div style={{ flex: 1, padding: '2rem' }}>
+        <div style={{ flex: 1 }}>
           {/* Header */}
           <div style={{
-            background: '#2a2a2a',
-            border: '2px solid #d97706',
-            borderRadius: '12px',
+            background: 'white',
+            borderRadius: '16px',
             padding: '1.5rem',
-            marginBottom: '2rem'
+            border: '1px solid #EADBE7',
+            boxShadow: '0 2px 8px rgba(46, 46, 46, 0.05)',
+            marginBottom: '1.5rem'
           }}>
             <div style={{
               display: 'flex',
@@ -334,15 +249,16 @@ const ShopProducts = () => {
               marginBottom: '1rem'
             }}>
               <h1 style={{
-                color: '#d97706',
-                fontSize: '1.8rem',
+                color: '#2E2E2E',
+                fontSize: '1.6rem',
                 fontWeight: '700',
-                fontFamily: 'Gabarito, sans-serif'
+                fontFamily: 'Gabarito, sans-serif',
+                margin: 0
               }}>
                 All Products
               </h1>
-              <div style={{ color: '#d97706', fontSize: '0.9rem' }}>
-                Product Type
+              <div style={{ color: '#6B6B6B', fontSize: '0.9rem', fontWeight: '500' }}>
+                {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
               </div>
             </div>
 
@@ -350,39 +266,46 @@ const ShopProducts = () => {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              gap: '1rem'
+              gap: '1rem',
+              flexWrap: 'wrap'
             }}>
               {/* Search */}
               <input
                 type="text"
-                placeholder="Search"
+                placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   flex: 1,
+                  minWidth: '200px',
                   padding: '0.75rem 1rem',
-                  background: '#1a1a1a',
-                  color: '#d97706',
-                  border: '2px solid #d97706',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  outline: 'none'
+                  background: '#F6F6F6',
+                  color: '#2E2E2E',
+                  border: '2px solid #EADBE7',
+                  borderRadius: '10px',
+                  fontSize: '0.95rem',
+                  fontFamily: 'Quicksand, sans-serif',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease'
                 }}
+                onFocus={(e) => e.target.style.borderColor = '#875A7B'}
+                onBlur={(e) => e.target.style.borderColor = '#EADBE7'}
               />
 
               {/* Sort By */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ color: '#d97706', fontSize: '0.95rem' }}>Sort By:</span>
+                <span style={{ color: '#6B6B6B', fontSize: '0.9rem', fontWeight: '600' }}>Sort By:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   style={{
                     padding: '0.75rem 1rem',
-                    background: '#1a1a1a',
-                    color: '#d97706',
-                    border: '2px solid #d97706',
-                    borderRadius: '8px',
-                    fontSize: '0.95rem',
+                    background: '#F6F6F6',
+                    color: '#2E2E2E',
+                    border: '2px solid #EADBE7',
+                    borderRadius: '10px',
+                    fontSize: '0.9rem',
+                    fontFamily: 'Quicksand, sans-serif',
                     cursor: 'pointer',
                     outline: 'none'
                   }}
@@ -399,47 +322,60 @@ const ShopProducts = () => {
           {loading ? (
             <div style={{
               textAlign: 'center',
-              color: '#d97706',
+              color: '#6B6B6B',
               padding: '3rem',
-              fontSize: '1.2rem'
+              fontSize: '1rem'
             }}>
               Loading products...
             </div>
           ) : filteredProducts.length === 0 ? (
             <div style={{
               textAlign: 'center',
-              color: '#d97706',
               padding: '3rem',
-              fontSize: '1.2rem'
+              background: 'white',
+              borderRadius: '16px',
+              border: '1px solid #EADBE7'
             }}>
-              No products found
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+              <h3 style={{
+                color: '#2E2E2E',
+                fontSize: '1.2rem',
+                fontFamily: 'Gabarito, sans-serif',
+                marginBottom: '0.5rem'
+              }}>
+                No products found
+              </h3>
+              <p style={{ color: '#6B6B6B' }}>Try adjusting your filters or search term.</p>
             </div>
           ) : (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
               gap: '1.5rem'
             }}>
               {filteredProducts.map(product => (
                 <div
                   key={product.id}
                   style={{
-                    background: '#2a2a2a',
-                    border: '2px solid #d97706',
-                    borderRadius: '12px',
+                    background: 'white',
+                    border: '1px solid #EADBE7',
+                    borderRadius: '16px',
                     padding: '1.5rem',
-                    transition: 'all 0.3s ease',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     display: 'flex',
                     flexDirection: 'column',
-                    minHeight: '350px'
+                    minHeight: 'auto',
+                    boxShadow: '0 2px 8px rgba(46, 46, 46, 0.05)'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-5px)';
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(217, 119, 6, 0.3)';
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 12px 32px rgba(135, 90, 123, 0.15)';
+                    e.currentTarget.style.borderColor = '#875A7B';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(46, 46, 46, 0.05)';
+                    e.currentTarget.style.borderColor = '#EADBE7';
                   }}
                 >
                   {/* Product Image Placeholder */}
@@ -448,16 +384,16 @@ const ShopProducts = () => {
                     style={{
                       width: '100%',
                       height: '180px',
-                      background: '#1a1a1a',
-                      border: '2px solid #d97706',
-                      borderRadius: '8px',
-                      marginBottom: '1rem',
+                      background: '#EADBE7',
+                      borderRadius: '12px',
+                      marginBottom: '1.25rem',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#d97706',
+                      color: '#875A7B',
                       fontSize: '3rem',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      transition: 'background 0.2s ease'
                     }}>
                     📦
                   </div>
@@ -467,51 +403,43 @@ const ShopProducts = () => {
                     <h3 
                       onClick={() => navigate(`/shop/product/${product.id}`)}
                       style={{
-                        color: '#d97706',
+                        color: '#2E2E2E',
                         fontSize: '1.1rem',
-                        fontWeight: '600',
-                        marginBottom: '0.5rem',
+                        fontWeight: '700',
+                        marginBottom: '0.75rem',
                         fontFamily: 'Gabarito, sans-serif',
-                        cursor: 'pointer'
-                      }}>
+                        cursor: 'pointer',
+                        transition: 'color 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.target.style.color = '#875A7B'}
+                      onMouseLeave={(e) => e.target.style.color = '#2E2E2E'}
+                    >
                       {product.name}
                     </h3>
-
-                    <p style={{
-                      color: '#d97706',
-                      fontSize: '0.85rem',
-                      opacity: 0.8,
-                      marginBottom: '1rem',
-                      flex: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical'
-                    }}>
-                      {product.description || 'No description available'}
-                    </p>
 
                     <div style={{
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       paddingTop: '1rem',
-                      borderTop: '1px solid #d97706',
+                      borderTop: '1px solid #EADBE7',
                       marginBottom: '1rem'
                     }}>
                       <div style={{
-                        color: '#d97706',
+                        color: '#875A7B',
                         fontSize: '1.3rem',
                         fontWeight: '700',
                         fontFamily: 'Gabarito, sans-serif'
                       }}>
-                        ${product.base_price?.toFixed(2) || '0.00'}
+                        ₹{product.base_price?.toFixed(2) || '0.00'}
                       </div>
                       <div style={{
-                        color: '#d97706',
+                        color: '#6B6B6B',
                         fontSize: '0.8rem',
-                        opacity: 0.7
+                        background: '#EADBE7',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '6px',
+                        fontWeight: '600'
                       }}>
                         {product.billing_type || 'One-time'}
                       </div>
@@ -530,24 +458,26 @@ const ShopProducts = () => {
                         style={{
                           flex: 1,
                           padding: '0.75rem',
-                          background: '#d97706',
-                          color: '#1a1a1a',
+                          background: '#875A7B',
+                          color: 'white',
                           border: 'none',
-                          borderRadius: '6px',
+                          borderRadius: '10px',
                           fontSize: '0.9rem',
                           fontWeight: '600',
+                          fontFamily: 'Quicksand, sans-serif',
                           cursor: 'pointer',
                           transition: 'all 0.2s ease',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '0.5rem'
+                          gap: '0.5rem',
+                          boxShadow: '0 2px 8px rgba(135, 90, 123, 0.25)'
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.background = '#b45309';
+                          e.target.style.background = '#A6789C';
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.background = '#d97706';
+                          e.target.style.background = '#875A7B';
                         }}
                       >
                         <span>🛒</span>
@@ -559,21 +489,21 @@ const ShopProducts = () => {
                         style={{
                           padding: '0.75rem',
                           background: 'transparent',
-                          color: '#d97706',
-                          border: '2px solid #d97706',
-                          borderRadius: '6px',
+                          color: '#875A7B',
+                          border: '2px solid #EADBE7',
+                          borderRadius: '10px',
                           fontSize: '0.9rem',
                           fontWeight: '600',
                           cursor: 'pointer',
                           transition: 'all 0.2s ease'
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.background = '#d97706';
-                          e.target.style.color = '#1a1a1a';
+                          e.target.style.background = '#EADBE7';
+                          e.target.style.borderColor = '#875A7B';
                         }}
                         onMouseLeave={(e) => {
                           e.target.style.background = 'transparent';
-                          e.target.style.color = '#d97706';
+                          e.target.style.borderColor = '#EADBE7';
                         }}
                         title="View Details"
                       >

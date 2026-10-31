@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const CustomerLayout = () => {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const accountMenuRef = useRef(null);
 
   useEffect(() => {
     updateCartCount();
@@ -15,9 +15,19 @@ const CustomerLayout = () => {
     // Listen for cart updates
     const handleCartUpdate = () => updateCartCount();
     window.addEventListener('cartUpdated', handleCartUpdate);
+    window.addEventListener('storage', handleCartUpdate);
+
+    const handleClickOutside = (e) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
+        setShowAccountMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
     
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate);
+      window.removeEventListener('storage', handleCartUpdate);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -35,11 +45,6 @@ const CustomerLayout = () => {
       console.error('Error reading cart:', error);
       setCartCount(0);
     }
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    navigate(`/shop?search=${searchQuery}`);
   };
 
   const handleLogout = () => {
@@ -102,7 +107,7 @@ const CustomerLayout = () => {
                   fontSize: '0.95rem',
                   color: '#6B6B6B',
                   textDecoration: 'none',
-                  fontWeight: '500',
+                  fontWeight: '600',
                   transition: 'color 0.2s ease'
                 }}
                 onMouseEnter={(e) => e.target.style.color = '#875A7B'}
@@ -110,74 +115,120 @@ const CustomerLayout = () => {
               >
                 Home
               </Link>
-              <Link
-                to="/shop/products"
-                style={{
-                  fontFamily: 'Quicksand, sans-serif',
-                  fontSize: '0.95rem',
-                  color: '#6B6B6B',
-                  textDecoration: 'none',
-                  fontWeight: '500',
-                  transition: 'color 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#875A7B'}
-                onMouseLeave={(e) => e.target.style.color = '#6B6B6B'}
-              >
-                Shop
-              </Link>
-              <Link
-                to="/shop/about"
-                style={{
-                  fontFamily: 'Quicksand, sans-serif',
-                  fontSize: '0.95rem',
-                  color: '#6B6B6B',
-                  textDecoration: 'none',
-                  fontWeight: '500',
-                  transition: 'color 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#875A7B'}
-                onMouseLeave={(e) => e.target.style.color = '#6B6B6B'}
-              >
-                About Us
-              </Link>
-              <Link
-                to="/shop/contact"
-                style={{
-                  fontFamily: 'Quicksand, sans-serif',
-                  fontSize: '0.95rem',
-                  color: '#6B6B6B',
-                  textDecoration: 'none',
-                  fontWeight: '500',
-                  transition: 'color 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#875A7B'}
-                onMouseLeave={(e) => e.target.style.color = '#6B6B6B'}
-              >
-                Contact Us
-              </Link>
+
+              {/* My Account Dropdown in Navbar */}
+              <div style={{ position: 'relative' }} ref={accountMenuRef}>
+                <button
+                  onClick={() => setShowAccountMenu(!showAccountMenu)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '0.5rem 0',
+                    fontFamily: 'Quicksand, sans-serif',
+                    fontSize: '0.95rem',
+                    color: showAccountMenu ? '#875A7B' : '#6B6B6B',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    transition: 'color 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#875A7B'}
+                  onMouseLeave={(e) => {
+                    if (!showAccountMenu) e.currentTarget.style.color = '#6B6B6B';
+                  }}
+                >
+                  <span>My Account</span>
+                  <span style={{
+                    fontSize: '0.65rem',
+                    display: 'inline-block',
+                    transform: showAccountMenu ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease'
+                  }}>
+                    ▼
+                  </span>
+                </button>
+
+                {showAccountMenu && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 0.5rem)',
+                    left: 0,
+                    background: 'white',
+                    borderRadius: '10px',
+                    boxShadow: '0 8px 24px rgba(135, 90, 123, 0.15)',
+                    minWidth: '190px',
+                    overflow: 'hidden',
+                    zIndex: 1000,
+                    border: '1px solid #EADBE7'
+                  }}>
+                    <div
+                      onClick={() => {
+                        navigate('/shop/orders');
+                        setShowAccountMenu(false);
+                      }}
+                      style={{
+                        padding: '0.85rem 1.25rem',
+                        cursor: 'pointer',
+                        color: '#2E2E2E',
+                        fontFamily: 'Quicksand, sans-serif',
+                        fontSize: '0.95rem',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.6rem',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#F6F6F6';
+                        e.currentTarget.style.color = '#875A7B';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.color = '#2E2E2E';
+                      }}
+                    >
+                      <span>📦</span> My orders
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        navigate('/shop/subscriptions');
+                        setShowAccountMenu(false);
+                      }}
+                      style={{
+                        padding: '0.85rem 1.25rem',
+                        cursor: 'pointer',
+                        color: '#2E2E2E',
+                        fontFamily: 'Quicksand, sans-serif',
+                        fontSize: '0.95rem',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.6rem',
+                        transition: 'all 0.2s ease',
+                        borderTop: '1px solid #F6F6F6'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#F6F6F6';
+                        e.currentTarget.style.color = '#875A7B';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.color = '#2E2E2E';
+                      }}
+                    >
+                      <span>🔄</span> My Subscription
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Right: Search, Cart, Account */}
+          {/* Right: Cart, User & Logout */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            {/* Search Icon */}
-            <button
-              onClick={() => document.getElementById('search-input')?.focus()}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#6B6B6B',
-                fontSize: '1.25rem',
-                padding: '0.5rem',
-                transition: 'color 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.target.style.color = '#875A7B'}
-              onMouseLeave={(e) => e.target.style.color = '#6B6B6B'}
-            >
-              🔍
-            </button>
-
             {/* Cart Icon with Badge */}
             <Link
               to="/shop/cart"
@@ -213,124 +264,39 @@ const CustomerLayout = () => {
               </span>
             </Link>
 
-            {/* My Account Dropdown */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowAccountMenu(!showAccountMenu)}
-                style={{
-                  background: '#875A7B',
-                  border: 'none',
-                  color: 'white',
-                  padding: '0.5rem 1.25rem',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontFamily: 'Quicksand, sans-serif',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.target.style.background = '#A6789C'}
-                onMouseLeave={(e) => e.target.style.background = '#875A7B'}
-              >
-                <span>👤</span>
-                <span>{currentUser?.name || 'My Account'}</span>
-              </button>
-
-              {showAccountMenu && (
-                <div style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 0.5rem)',
-                  right: 0,
-                  background: 'white',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                  minWidth: '200px',
-                  overflow: 'hidden',
-                  zIndex: 1000,
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <div
-                    onClick={() => { navigate('/shop/dashboard'); setShowAccountMenu(false); }}
-                    style={{
-                      padding: '0.75rem 1rem',
-                      cursor: 'pointer',
-                      color: '#2E2E2E',
-                      fontFamily: 'Quicksand, sans-serif',
-                      fontSize: '0.9rem',
-                      transition: 'background 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.target.style.background = '#F6F6F6'}
-                    onMouseLeave={(e) => e.target.style.background = 'white'}
-                  >
-                    My Dashboard
-                  </div>
-                  <div
-                    onClick={() => { navigate('/shop/orders'); setShowAccountMenu(false); }}
-                    style={{
-                      padding: '0.75rem 1rem',
-                      cursor: 'pointer',
-                      color: '#2E2E2E',
-                      fontFamily: 'Quicksand, sans-serif',
-                      fontSize: '0.9rem',
-                      transition: 'background 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.target.style.background = '#F6F6F6'}
-                    onMouseLeave={(e) => e.target.style.background = 'white'}
-                  >
-                    My Orders
-                  </div>
-                  <div
-                    onClick={() => { navigate('/shop/subscriptions'); setShowAccountMenu(false); }}
-                    style={{
-                      padding: '0.75rem 1rem',
-                      cursor: 'pointer',
-                      color: '#2E2E2E',
-                      fontFamily: 'Quicksand, sans-serif',
-                      fontSize: '0.9rem',
-                      transition: 'background 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.target.style.background = '#F6F6F6'}
-                    onMouseLeave={(e) => e.target.style.background = 'white'}
-                  >
-                    My Subscriptions
-                  </div>
-                  <div
-                    onClick={() => { navigate('/shop/profile'); setShowAccountMenu(false); }}
-                    style={{
-                      padding: '0.75rem 1rem',
-                      cursor: 'pointer',
-                      color: '#2E2E2E',
-                      fontFamily: 'Quicksand, sans-serif',
-                      fontSize: '0.9rem',
-                      transition: 'background 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.target.style.background = '#F6F6F6'}
-                    onMouseLeave={(e) => e.target.style.background = 'white'}
-                  >
-                    Profile Settings
-                  </div>
-                  <div
-                    onClick={handleLogout}
-                    style={{
-                      padding: '0.75rem 1rem',
-                      cursor: 'pointer',
-                      color: '#ef4444',
-                      fontFamily: 'Quicksand, sans-serif',
-                      fontSize: '0.9rem',
-                      transition: 'background 0.2s ease',
-                      borderTop: '1px solid #F6F6F6'
-                    }}
-                    onMouseEnter={(e) => e.target.style.background = '#EADBE7'}
-                    onMouseLeave={(e) => e.target.style.background = 'white'}
-                  >
-                    Logout
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Profile Button (Clickable) */}
+            <button
+              onClick={() => navigate('/shop/profile')}
+              style={{
+                background: '#F6F6F6',
+                border: '1px solid #EADBE7',
+                color: '#2E2E2E',
+                padding: '0.5rem 1.15rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontFamily: 'Quicksand, sans-serif',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#EADBE7';
+                e.currentTarget.style.color = '#875A7B';
+                e.currentTarget.style.borderColor = '#875A7B';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#F6F6F6';
+                e.currentTarget.style.color = '#2E2E2E';
+                e.currentTarget.style.borderColor = '#EADBE7';
+              }}
+              title="View Profile Settings"
+            >
+              <span>👤</span>
+              <span>{currentUser?.name || 'Profile'}</span>
+            </button>
           </div>
         </div>
       </nav>
