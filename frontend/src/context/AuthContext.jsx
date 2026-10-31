@@ -10,7 +10,6 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      // Set token in axios headers
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`
       fetchCurrentUser()
     } else {
@@ -21,11 +20,9 @@ export const AuthProvider = ({ children }) => {
   const fetchCurrentUser = async () => {
     try {
       const response = await axiosInstance.get('/auth/me')
-      console.log('Fetched current user:', response.data)
       setCurrentUser(response.data)
     } catch (error) {
       console.error('Failed to fetch user:', error)
-      // Token is invalid, clear it
       logout()
     } finally {
       setLoading(false)

@@ -1,30 +1,42 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.base import get_db
 from app.schemas.tax import TaxResponse, TaxCreate, TaxUpdate
 from app.models.tax import Tax
+from app.models.user import User
+from app.api.routes.auth import require_roles
 
 router = APIRouter()
 
 @router.get("/taxes", response_model=List[TaxResponse])
-def get_taxes(db: Session = Depends(get_db)):
-    """Get all taxes"""
+def get_taxes(
+    current_user: User = Depends(require_roles("admin", "internal")),
+    db: Session = Depends(get_db)
+):
+    """Get all taxes (Admin and Internal users can view for invoicing/quoting)"""
     taxes = db.query(Tax).all()
     return taxes
 
 @router.get("/taxes/{tax_id}", response_model=TaxResponse)
-def get_tax(tax_id: int, db: Session = Depends(get_db)):
+def get_tax(
+    tax_id: int,
+    current_user: User = Depends(require_roles("admin", "internal")),
+    db: Session = Depends(get_db)
+):
     """Get a specific tax by ID"""
     tax = db.query(Tax).filter(Tax.id == tax_id).first()
     if not tax:
         raise HTTPException(status_code=404, detail="Tax not found")
     return tax
 
-@router.post("/taxes", response_model=TaxResponse)
-def create_tax(tax: TaxCreate, db: Session = Depends(get_db)):
-    """Create a new tax (Admin only)"""
-    # TODO: Add role-based access control check for admin
+@router.post("/taxes", response_model=TaxResponse, status_code=status.HTTP_201_CREATED)
+def create_tax(
+    tax: TaxCreate,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
+    """Create a new tax (Admin only - Internal users forbidden)"""
     db_tax = Tax(**tax.model_dump())
     db.add(db_tax)
     db.commit()
@@ -32,9 +44,13 @@ def create_tax(tax: TaxCreate, db: Session = Depends(get_db)):
     return db_tax
 
 @router.put("/taxes/{tax_id}", response_model=TaxResponse)
-def update_tax(tax_id: int, tax_update: TaxUpdate, db: Session = Depends(get_db)):
+def update_tax(
+    tax_id: int,
+    tax_update: TaxUpdate,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
     """Update a tax (Admin only)"""
-    # TODO: Add role-based access control check for admin
     db_tax = db.query(Tax).filter(Tax.id == tax_id).first()
     if not db_tax:
         raise HTTPException(status_code=404, detail="Tax not found")
@@ -48,9 +64,12 @@ def update_tax(tax_id: int, tax_update: TaxUpdate, db: Session = Depends(get_db)
     return db_tax
 
 @router.delete("/taxes/{tax_id}")
-def delete_tax(tax_id: int, db: Session = Depends(get_db)):
+def delete_tax(
+    tax_id: int,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
     """Delete a tax (Admin only)"""
-    # TODO: Add role-based access control check for admin
     db_tax = db.query(Tax).filter(Tax.id == tax_id).first()
     if not db_tax:
         raise HTTPException(status_code=404, detail="Tax not found")

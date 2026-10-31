@@ -6,6 +6,7 @@ import axios from '../api/axios';
 const Signup = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -21,18 +22,22 @@ const Signup = () => {
   };
 
   const validatePassword = (password) => {
-    // Password must be at least 8 characters with at least one uppercase, one lowercase, and one number
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
+    // Password requirements from specification:
+    // - Length > 8 characters (at least 9 characters long)
+    // - At least one uppercase letter
+    // - At least one lowercase letter
+    // - At least one special character
+    if (!password || password.length <= 8) {
+      return 'Password length must be greater than 8 characters (at least 9 characters long)';
     }
     if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
+      return 'Password must contain at least one uppercase letter (A-Z)';
     }
     if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
+      return 'Password must contain at least one lowercase letter (a-z)';
     }
-    if (!/[0-9]/.test(password)) {
-      return 'Password must contain at least one number';
+    if (!/[^a-zA-Z0-9]/.test(password)) {
+      return 'Password must contain at least one special character (e.g. !@#$%^&*)';
     }
     return null;
   };
@@ -42,8 +47,8 @@ const Signup = () => {
     setError('');
 
     // Validate name
-    if (!formData.name.trim()) {
-      setError('Please enter your full name');
+    if (!formData.name.trim() || formData.name.trim().length < 2) {
+      setError('Please enter your full name (at least 2 characters)');
       return;
     }
 
@@ -69,11 +74,13 @@ const Signup = () => {
     setLoading(true);
 
     try {
+      // Public registration strictly registers Customer accounts ('portal')
+      // Rule from specification: "Only Admin can create Internal Users."
       const response = await axios.post('/auth/signup', {
         name: formData.name.trim(),
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
-        role: 'portal' // All signups are regular users
+        role: 'portal'
       });
       
       const { access_token, user } = response.data;
@@ -81,7 +88,7 @@ const Signup = () => {
       // Store token and user
       login(access_token, user);
       
-      // Redirect to user shop
+      // Redirect to customer portal
       navigate('/shop');
     } catch (err) {
       console.error('Signup error:', err);
@@ -91,276 +98,289 @@ const Signup = () => {
     }
   };
 
+  const pwd = formData.password;
+  const pwdValidation = {
+    length: pwd.length > 8,
+    upper: /[A-Z]/.test(pwd),
+    lower: /[a-z]/.test(pwd),
+    special: /[^a-zA-Z0-9]/.test(pwd)
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #001D39 0%, #0A4174 50%, #49769F 100%)',
-      padding: '2rem'
+      background: 'linear-gradient(135deg, #0A4174 0%, #001D39 100%)',
+      fontFamily: 'Quicksand, sans-serif',
+      padding: '2rem 1rem'
     }}>
       <div style={{
-        background: 'white',
-        borderRadius: '20px',
-        boxShadow: '0 20px 60px rgba(0, 29, 57, 0.3)',
-        padding: '3rem',
         width: '100%',
-        maxWidth: '450px'
+        maxWidth: '500px',
+        background: '#ffffff',
+        borderRadius: '16px',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
+        overflow: 'hidden'
       }}>
-        {/* Logo/Title */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{
-            fontFamily: 'Gabarito, sans-serif',
-            fontSize: '2rem',
-            color: '#001D39',
-            marginBottom: '0.5rem'
+        {/* Header */}
+        <div style={{
+          padding: '2.5rem 2.5rem 1.5rem 2.5rem',
+          textAlign: 'center',
+          background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+          borderBottom: '1px solid #f1f5f9'
+        }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '56px',
+            height: '56px',
+            borderRadius: '14px',
+            background: 'linear-gradient(135deg, #0A4174 0%, #49769F 100%)',
+            color: 'white',
+            fontSize: '1.75rem',
+            marginBottom: '1rem',
+            boxShadow: '0 8px 16px rgba(10, 65, 116, 0.2)'
           }}>
-            Create Account
+            🛍️
+          </div>
+          <h1 style={{
+            margin: 0,
+            fontSize: '1.65rem',
+            fontWeight: '700',
+            fontFamily: 'Gabarito, sans-serif',
+            color: '#0f172a'
+          }}>
+            Create Customer Account
           </h1>
           <p style={{
-            fontFamily: 'Quicksand, sans-serif',
-            color: '#49769F',
-            fontSize: '0.95rem'
+            margin: '0.5rem 0 0 0',
+            color: '#64748b',
+            fontSize: '0.92rem'
           }}>
-            Sign up to get started
+            Sign up to view products, purchase recurring subscriptions, and manage billing
           </p>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div style={{
-            background: '#fee2e2',
-            color: '#dc2626',
-            padding: '0.75rem 1rem',
-            borderRadius: '12px',
-            marginBottom: '1.5rem',
-            fontFamily: 'Quicksand, sans-serif',
-            fontSize: '0.9rem',
-            border: '1px solid #fca5a5'
-          }}>
-            {error}
-          </div>
-        )}
-
-        {/* Signup Form */}
-        <form onSubmit={handleSubmit}>
-          {/* Name Field */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              fontFamily: 'Quicksand, sans-serif',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              color: '#001D39',
-              marginBottom: '0.5rem'
-            }}>
-              Full Name *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              placeholder="John Doe"
-              style={{
-                width: '100%',
-                padding: '0.875rem 1rem',
-                borderRadius: '12px',
-                border: '2px solid #BDD8E9',
-                fontSize: '0.95rem',
-                fontFamily: 'Quicksand, sans-serif',
-                transition: 'all 0.2s ease',
-                outline: 'none'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#0A4174';
-                e.target.style.boxShadow = '0 0 0 3px rgba(10, 65, 116, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#BDD8E9';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-          </div>
-
-          {/* Email Field */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              fontFamily: 'Quicksand, sans-serif',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              color: '#001D39',
-              marginBottom: '0.5rem'
-            }}>
-              Email Address *
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              placeholder="you@example.com"
-              style={{
-                width: '100%',
-                padding: '0.875rem 1rem',
-                borderRadius: '12px',
-                border: '2px solid #BDD8E9',
-                fontSize: '0.95rem',
-                fontFamily: 'Quicksand, sans-serif',
-                transition: 'all 0.2s ease',
-                outline: 'none'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#0A4174';
-                e.target.style.boxShadow = '0 0 0 3px rgba(10, 65, 116, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#BDD8E9';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-          </div>
-
-          {/* Password Field */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              fontFamily: 'Quicksand, sans-serif',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              color: '#001D39',
-              marginBottom: '0.5rem'
-            }}>
-              Password *
-            </label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-              placeholder="••••••••"
-              style={{
-                width: '100%',
-                padding: '0.875rem 1rem',
-                borderRadius: '12px',
-                border: '2px solid #BDD8E9',
-                fontSize: '0.95rem',
-                fontFamily: 'Quicksand, sans-serif',
-                transition: 'all 0.2s ease',
-                outline: 'none'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#0A4174';
-                e.target.style.boxShadow = '0 0 0 3px rgba(10, 65, 116, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#BDD8E9';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
+        {/* Form Body */}
+        <div style={{ padding: '2rem 2.5rem 2.5rem 2.5rem' }}>
+          {error && (
             <div style={{
-              fontSize: '0.75rem',
-              color: '#71717a',
-              marginTop: '0.5rem',
-              fontFamily: 'Quicksand, sans-serif'
+              background: '#fef2f2',
+              color: '#991b1b',
+              padding: '0.85rem 1rem',
+              borderRadius: '8px',
+              marginBottom: '1.5rem',
+              fontSize: '0.88rem',
+              border: '1px solid #fecaca',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
             }}>
-              Must be 8+ characters with uppercase, lowercase, and number
+              <span>⚠️</span>
+              <span>{error}</span>
             </div>
-          </div>
+          )}
 
-          {/* Confirm Password Field */}
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={{
-              display: 'block',
-              fontFamily: 'Quicksand, sans-serif',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              color: '#001D39',
-              marginBottom: '0.5rem'
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                color: '#334155',
+                marginBottom: '0.4rem'
+              }}>
+                Full Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Jane Customer"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 0.95rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.95rem',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                  fontFamily: 'Quicksand, sans-serif'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                color: '#334155',
+                marginBottom: '0.4rem'
+              }}>
+                Email Address *
+              </label>
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="jane@example.com"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 0.95rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.95rem',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                  fontFamily: 'Quicksand, sans-serif'
+                }}
+              />
+            </div>
+
+            {/* Password Rules Checklist */}
+            <div style={{
+              padding: '0.75rem 1rem',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              marginBottom: '1.25rem',
+              fontSize: '0.78rem',
+              color: '#475569'
             }}>
-              Confirm Password *
-            </label>
-            <input
-              type="password"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              required
-              placeholder="••••••••"
+              <strong style={{ color: '#0f172a' }}>Password Requirements:</strong>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.35rem', marginTop: '0.4rem' }}>
+                <span style={{ color: pwdValidation.length ? '#166534' : '#64748b' }}>
+                  {pwdValidation.length ? '✓' : '○'} &gt; 8 characters
+                </span>
+                <span style={{ color: pwdValidation.upper ? '#166534' : '#64748b' }}>
+                  {pwdValidation.upper ? '✓' : '○'} Uppercase (A-Z)
+                </span>
+                <span style={{ color: pwdValidation.lower ? '#166534' : '#64748b' }}>
+                  {pwdValidation.lower ? '✓' : '○'} Lowercase (a-z)
+                </span>
+                <span style={{ color: pwdValidation.special ? '#166534' : '#64748b' }}>
+                  {pwdValidation.special ? '✓' : '○'} Special char (!@#$)
+                </span>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                color: '#334155',
+                marginBottom: '0.4rem'
+              }}>
+                Password *
+              </label>
+              <input
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Enter strong password"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 0.95rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.95rem',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                  fontFamily: 'Quicksand, sans-serif'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.75rem' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                color: '#334155',
+                marginBottom: '0.4rem'
+              }}>
+                Confirm Password *
+              </label>
+              <input
+                type="password"
+                required
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                placeholder="Re-enter password"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 0.95rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.95rem',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                  fontFamily: 'Quicksand, sans-serif'
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
               style={{
                 width: '100%',
-                padding: '0.875rem 1rem',
-                borderRadius: '12px',
-                border: '2px solid #BDD8E9',
-                fontSize: '0.95rem',
-                fontFamily: 'Quicksand, sans-serif',
-                transition: 'all 0.2s ease',
-                outline: 'none'
+                padding: '0.85rem',
+                background: '#0A4174',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontWeight: '700',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.8 : 1,
+                fontFamily: 'Quicksand, sans-serif'
               }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#0A4174';
-                e.target.style.boxShadow = '0 0 0 3px rgba(10, 65, 116, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#BDD8E9';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
+            >
+              {loading ? 'Creating account...' : 'Create Customer Account'}
+            </button>
+          </form>
+
+          {/* Notice about staff accounts */}
+          <div style={{
+            marginTop: '1.5rem',
+            padding: '0.75rem',
+            background: '#eff6ff',
+            borderRadius: '8px',
+            border: '1px solid #bfdbfe',
+            fontSize: '0.78rem',
+            color: '#1e40af',
+            lineHeight: '1.4'
+          }}>
+            <strong>Staff Notice:</strong> Internal User and Administrator accounts cannot be created via public registration. Per system rules, staff members must be created by a System Administrator.
           </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '1rem',
-              background: loading ? '#6EA2B3' : 'linear-gradient(135deg, #0A4174 0%, #001D39 100%)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '1rem',
-              fontWeight: '600',
-              fontFamily: 'Quicksand, sans-serif',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 4px 12px rgba(0, 29, 57, 0.2)'
-            }}
-            onMouseEnter={(e) => {
-              if (!loading) {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 6px 20px rgba(0, 29, 57, 0.3)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 12px rgba(0, 29, 57, 0.2)';
-            }}
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
-
-        {/* Login Link */}
-        <div style={{
-          marginTop: '2rem',
-          textAlign: 'center',
-          fontFamily: 'Quicksand, sans-serif',
-          fontSize: '0.9rem',
-          color: '#49769F'
-        }}>
-          Already have an account?{' '}
-          <Link
-            to="/login"
-            style={{
-              color: '#0A4174',
-              fontWeight: '600',
-              textDecoration: 'none'
-            }}
-          >
-            Sign in
-          </Link>
+          <div style={{
+            marginTop: '1.5rem',
+            textAlign: 'center',
+            fontSize: '0.88rem',
+            color: '#64748b'
+          }}>
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              style={{
+                color: '#0A4174',
+                fontWeight: '700',
+                textDecoration: 'none'
+              }}
+            >
+              Sign in
+            </Link>
+          </div>
         </div>
       </div>
     </div>

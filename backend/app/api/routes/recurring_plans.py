@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.base import get_db
 from app.models.recurring_plan import RecurringPlan
+from app.models.user import User
+from app.api.routes.auth import require_roles
 from app.schemas import recurring_plan
 
 router = APIRouter()
@@ -18,8 +20,13 @@ def get_recurring_plan(plan_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Recurring plan not found")
     return db_plan
 
-@router.post("/recurring-plans", response_model=recurring_plan.RecurringPlan)
-def create_recurring_plan(plan: recurring_plan.RecurringPlanCreate, db: Session = Depends(get_db)):
+@router.post("/recurring-plans", response_model=recurring_plan.RecurringPlan, status_code=status.HTTP_201_CREATED)
+def create_recurring_plan(
+    plan: recurring_plan.RecurringPlanCreate,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
+    """Create recurring plan (Admin only - Internal users forbidden)"""
     db_plan = RecurringPlan(**plan.model_dump())
     db.add(db_plan)
     db.commit()
@@ -27,7 +34,13 @@ def create_recurring_plan(plan: recurring_plan.RecurringPlanCreate, db: Session 
     return db_plan
 
 @router.put("/recurring-plans/{plan_id}", response_model=recurring_plan.RecurringPlan)
-def update_recurring_plan(plan_id: int, plan: recurring_plan.RecurringPlanUpdate, db: Session = Depends(get_db)):
+def update_recurring_plan(
+    plan_id: int,
+    plan: recurring_plan.RecurringPlanUpdate,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
+    """Update recurring plan (Admin only)"""
     db_plan = db.query(RecurringPlan).filter(RecurringPlan.id == plan_id).first()
     if not db_plan:
         raise HTTPException(status_code=404, detail="Recurring plan not found")
@@ -40,7 +53,12 @@ def update_recurring_plan(plan_id: int, plan: recurring_plan.RecurringPlanUpdate
     return db_plan
 
 @router.delete("/recurring-plans/{plan_id}")
-def delete_recurring_plan(plan_id: int, db: Session = Depends(get_db)):
+def delete_recurring_plan(
+    plan_id: int,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db)
+):
+    """Delete recurring plan (Admin only)"""
     db_plan = db.query(RecurringPlan).filter(RecurringPlan.id == plan_id).first()
     if not db_plan:
         raise HTTPException(status_code=404, detail="Recurring plan not found")
