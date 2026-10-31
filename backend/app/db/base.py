@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 def get_sqlite_fallback_url() -> str:
     # Anchor to the backend directory
     backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    return f"sqlite:///{os.path.join(backend_dir, 'subscription_db.sqlite').replace('\\', '/')}"
+    db_path = os.path.join(backend_dir, 'subscription_db.sqlite').replace('\\', '/')
+    return f"sqlite:///{db_path}"
 
 def init_engine():
     db_url = settings.DATABASE_URL

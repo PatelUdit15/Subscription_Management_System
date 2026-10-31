@@ -124,7 +124,7 @@ const Invoices = () => {
         <span style={{
           background: '#fee2e2',
           color: '#991b1b',
-          padding: '0.25rem 0.65rem',
+          padding: '0.3rem 0.75rem',
           borderRadius: '12px',
           fontSize: '0.8rem',
           fontWeight: '700'
@@ -146,7 +146,7 @@ const Invoices = () => {
       <span style={{
         background: s.bg,
         color: s.color,
-        padding: '0.25rem 0.65rem',
+        padding: '0.3rem 0.75rem',
         borderRadius: '12px',
         fontSize: '0.8rem',
         fontWeight: '600',
@@ -184,11 +184,11 @@ const Invoices = () => {
   const overdueCount = invoices.filter(inv => inv.due_date < todayStr && inv.status !== 'paid' && inv.status !== 'cancelled').length;
 
   if (loading) {
-    return <div className="page-container">Loading invoices...</div>;
+    return <div className="page-container" style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>Loading invoices...</div>;
   }
 
   return (
-    <div className="page-container" style={{ fontFamily: 'Quicksand, sans-serif' }}>
+    <div className="page-container" style={{ fontFamily: 'var(--font-body)', padding: '2rem' }}>
       {toast.show && (
         <div className={`toast toast-${toast.type}`}>
           {toast.message}
@@ -196,10 +196,12 @@ const Invoices = () => {
       )}
 
       {/* Header */}
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
         <div>
-          <h1 className="page-title">Invoices</h1>
-          <p style={{ color: '#71717a', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
+          <h1 className="page-title" style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-primary-dark)', fontSize: '2rem', margin: '0 0 0.5rem 0' }}>
+            Invoices
+          </h1>
+          <p style={{ color: 'var(--color-text-secondary)', margin: 0, fontSize: '0.95rem' }}>
             Automated billing lifecycle: Draft → Confirmed/Posted → Paid. Real-time tax & discount calculation.
           </p>
         </div>
@@ -209,8 +211,8 @@ const Invoices = () => {
             onClick={handleRunBillingDay}
             disabled={billingLoading}
             style={{
-              padding: '0.75rem 1.25rem',
-              background: '#2563eb',
+              padding: '0.65rem 1.25rem',
+              background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
@@ -218,7 +220,9 @@ const Invoices = () => {
               cursor: billingLoading ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem'
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(135, 90, 123, 0.25)',
+              transition: 'all 0.2s ease'
             }}
           >
             <span>⚡</span> {billingLoading ? 'Processing...' : 'Run Billing Day'}
@@ -227,14 +231,18 @@ const Invoices = () => {
           <button
             onClick={() => window.location.href = '/admin/invoices/new'}
             style={{
-              padding: '0.75rem 1.25rem',
-              background: '#18181b',
-              color: 'white',
-              border: 'none',
+              padding: '0.65rem 1.25rem',
+              background: 'white',
+              color: 'var(--color-primary-dark)',
+              border: '2px solid var(--color-primary)',
               borderRadius: '8px',
               fontWeight: '600',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+              transition: 'all 0.2s ease'
             }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-accent-light)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
           >
             + Create Invoice
           </button>
@@ -256,14 +264,16 @@ const Invoices = () => {
             style={{
               padding: '0.5rem 1rem',
               borderRadius: '20px',
-              border: '1px solid',
-              borderColor: tab.isAlert && statusFilter !== 'overdue' ? '#f87171' : statusFilter === tab.key ? '#18181b' : '#e4e4e7',
-              background: statusFilter === tab.key ? '#18181b' : tab.isAlert ? '#fef2f2' : '#fff',
-              color: statusFilter === tab.key ? '#fff' : tab.isAlert ? '#b91c1c' : '#52525b',
+              border: '1.5px solid',
+              borderColor: tab.isAlert && statusFilter !== 'overdue' ? '#f87171' : statusFilter === tab.key ? 'var(--color-primary)' : 'rgba(135, 90, 123, 0.2)',
+              background: statusFilter === tab.key ? 'var(--color-primary)' : tab.isAlert ? '#fef2f2' : '#fff',
+              color: statusFilter === tab.key ? '#fff' : tab.isAlert ? '#b91c1c' : 'var(--color-text-secondary)',
               fontSize: '0.85rem',
               fontWeight: '600',
               cursor: 'pointer',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              boxShadow: statusFilter === tab.key ? '0 2px 8px rgba(135, 90, 123, 0.25)' : 'none',
+              transition: 'all 0.2s ease'
             }}
           >
             {tab.label}
@@ -279,49 +289,64 @@ const Invoices = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
-            padding: '0.6rem 1rem',
-            border: '1px solid #e4e4e7',
+            padding: '0.55rem 1rem',
+            border: '1.5px solid rgba(135, 90, 123, 0.2)',
             borderRadius: '8px',
             width: '320px',
-            fontSize: '0.9rem'
+            fontSize: '0.9rem',
+            outline: 'none',
+            background: 'white'
           }}
+          onFocus={(e) => e.target.style.borderColor = 'var(--color-primary)'}
+          onBlur={(e) => e.target.style.borderColor = 'rgba(135, 90, 123, 0.2)'}
         />
       </div>
 
       {/* Invoices Table */}
-      <div className="table-container">
-        <table className="data-table">
+      <div className="table-container" style={{
+        borderRadius: '14px',
+        border: '1px solid rgba(135, 90, 123, 0.15)',
+        overflow: 'hidden',
+        boxShadow: '0 4px 12px rgba(135, 90, 123, 0.06)',
+        background: 'white'
+      }}>
+        <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr>
-              <th>Invoice Number</th>
-              <th>Customer</th>
-              <th>Date Issued</th>
-              <th>Due Date</th>
-              <th>Total Amount</th>
-              <th>Status</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
+            <tr style={{
+              background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
+              color: 'white'
+            }}>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>Invoice Number</th>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>Customer</th>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>Date Issued</th>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>Due Date</th>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>Total Amount</th>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>Status</th>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'right', fontWeight: '600', fontSize: '0.85rem' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredInvoices.length === 0 ? (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: '#71717a' }}>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-secondary)' }}>
                   No invoices found matching criteria.
                 </td>
               </tr>
             ) : (
               filteredInvoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td style={{ fontWeight: '600' }}>
+                <tr key={invoice.id} style={{ borderBottom: '1px solid rgba(135, 90, 123, 0.08)' }}>
+                  <td style={{ padding: '0.9rem 1.25rem', fontWeight: '600', color: 'var(--color-primary-dark)' }}>
                     {invoice.number || `INV-Draft-${invoice.id}`}
                   </td>
-                  <td>{invoice.customer_name}</td>
-                  <td>{formatDate(invoice.date_issued)}</td>
-                  <td>{formatDate(invoice.due_date)}</td>
-                  <td style={{ fontWeight: '600' }}>₹{parseFloat(invoice.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  <td>{getStatusBadge(invoice)}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className="action-buttons" style={{ justifyContent: 'flex-end' }}>
+                  <td style={{ padding: '0.9rem 1.25rem', color: 'var(--color-text-primary)' }}>{invoice.customer_name}</td>
+                  <td style={{ padding: '0.9rem 1.25rem', color: 'var(--color-text-secondary)' }}>{formatDate(invoice.date_issued)}</td>
+                  <td style={{ padding: '0.9rem 1.25rem', color: 'var(--color-text-secondary)' }}>{formatDate(invoice.due_date)}</td>
+                  <td style={{ padding: '0.9rem 1.25rem', fontWeight: '700', color: 'var(--color-primary-dark)' }}>
+                    ₹{parseFloat(invoice.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td style={{ padding: '0.9rem 1.25rem' }}>{getStatusBadge(invoice)}</td>
+                  <td style={{ padding: '0.9rem 1.25rem', textAlign: 'right' }}>
+                    <div className="action-buttons" style={{ justifyContent: 'flex-end', display: 'flex', gap: '0.5rem' }}>
                       {invoice.status === 'draft' && (
                         <button
                           onClick={() => handleConfirmInvoice(invoice.id)}
@@ -345,14 +370,15 @@ const Invoices = () => {
                         <button
                           onClick={() => handleOpenPayment(invoice)}
                           style={{
-                            background: '#18181b',
+                            background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
                             color: 'white',
                             border: 'none',
                             padding: '0.35rem 0.75rem',
                             borderRadius: '6px',
                             fontWeight: '600',
                             fontSize: '0.8rem',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 6px rgba(135, 90, 123, 0.25)'
                           }}
                           title="Record Payment"
                         >
@@ -363,8 +389,8 @@ const Invoices = () => {
                       <button
                         onClick={() => window.print()}
                         style={{
-                          background: '#f4f4f5',
-                          border: 'none',
+                          background: 'var(--color-bg-soft)',
+                          border: '1px solid var(--color-border)',
                           padding: '0.35rem 0.65rem',
                           borderRadius: '6px',
                           cursor: 'pointer'
@@ -377,6 +403,12 @@ const Invoices = () => {
                       <button
                         onClick={() => handleDelete(invoice.id)}
                         className="btn-action btn-danger"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '0.35rem'
+                        }}
                         title="Delete Invoice"
                       >
                         🗑
@@ -393,36 +425,36 @@ const Invoices = () => {
       {/* Record Payment Modal */}
       {showPaymentModal && selectedInvoice && (
         <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', border: '1px solid rgba(135, 90, 123, 0.2)' }}>
             <div className="modal-header">
-              <h2>Record Payment for {selectedInvoice.number || `Invoice #${selectedInvoice.id}`}</h2>
+              <h2 style={{ color: 'var(--color-primary-dark)' }}>Record Payment for {selectedInvoice.number || `Invoice #${selectedInvoice.id}`}</h2>
               <button className="modal-close" onClick={() => setShowPaymentModal(false)}>✕</button>
             </div>
 
-            <form onSubmit={handleRegisterPayment}>
-              <div style={{ marginBottom: '1rem', background: '#f4f4f5', padding: '0.75rem', borderRadius: '6px' }}>
-                <div style={{ fontSize: '0.85rem', color: '#52525b' }}>Customer: <strong>{selectedInvoice.customer_name}</strong></div>
-                <div style={{ fontSize: '0.85rem', color: '#52525b', marginTop: '0.25rem' }}>Invoice Total: <strong>₹{selectedInvoice.total_amount}</strong></div>
+            <form onSubmit={handleRegisterPayment} style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1rem', background: 'var(--color-bg-soft)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Customer: <strong style={{ color: 'var(--color-text-primary)' }}>{selectedInvoice.customer_name}</strong></div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>Invoice Total: <strong style={{ color: 'var(--color-primary-dark)' }}>₹{selectedInvoice.total_amount}</strong></div>
               </div>
 
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label>Amount (₹) *</label>
+                <label style={{ color: 'var(--color-primary-dark)' }}>Amount (₹) *</label>
                 <input
                   type="number"
                   step="0.01"
                   required
                   value={paymentData.amount}
                   onChange={e => setPaymentData({ ...paymentData, amount: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 />
               </div>
 
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label>Payment Method *</label>
+                <label style={{ color: 'var(--color-primary-dark)' }}>Payment Method *</label>
                 <select
                   value={paymentData.payment_method}
                   onChange={e => setPaymentData({ ...paymentData, payment_method: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 >
                   <option value="bank_transfer">Bank Transfer</option>
                   <option value="credit_card">Credit Card</option>
@@ -434,42 +466,42 @@ const Invoices = () => {
               </div>
 
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label>Payment Date *</label>
+                <label style={{ color: 'var(--color-primary-dark)' }}>Payment Date *</label>
                 <input
                   type="date"
                   required
                   value={paymentData.payment_date}
                   onChange={e => setPaymentData({ ...paymentData, payment_date: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 />
               </div>
 
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label>Transaction Reference</label>
+                <label style={{ color: 'var(--color-primary-dark)' }}>Transaction Reference</label>
                 <input
                   type="text"
                   placeholder="e.g. TXN-894827 or Bank Cheque No"
                   value={paymentData.transaction_reference}
                   onChange={e => setPaymentData({ ...paymentData, transaction_reference: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 />
               </div>
 
               <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                <label>Notes</label>
+                <label style={{ color: 'var(--color-primary-dark)' }}>Notes</label>
                 <textarea
                   rows="2"
                   value={paymentData.notes}
                   onChange={e => setPaymentData({ ...paymentData, notes: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 />
               </div>
 
-              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowPaymentModal(false)}>
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid rgba(135, 90, 123, 0.15)', paddingTop: '1rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowPaymentModal(false)} style={{ padding: '0.6rem 1.25rem' }}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary" style={{ background: '#18181b', color: '#fff' }}>
+                <button type="submit" className="btn-primary" style={{ padding: '0.6rem 1.25rem' }}>
                   Record Payment
                 </button>
               </div>

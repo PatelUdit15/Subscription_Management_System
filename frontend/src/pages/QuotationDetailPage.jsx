@@ -190,7 +190,7 @@ function QuotationDetailPage() {
                           <span style={{ color: 'var(--muted-blue)', fontStyle: 'italic' }}>None</span>
                         )}
                       </td>
-                      <td className="font-medium" style={{ color: 'var(--teal-blue)' }}>
+                      <td className="font-medium" style={{ color: 'var(--color-primary)' }}>
                         ${line.price_subtotal.toFixed(2)}
                       </td>
                     </tr>

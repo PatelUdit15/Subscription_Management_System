@@ -133,3 +133,36 @@ This document details the complete verification and implementation report for **
   - Complete automated test script verifying all 7 scenes end-to-end.
 - [x] **Production Bundle**:
   - Vite build verified with zero errors (`npm run build` completed cleanly).
+
+
+---
+
+### Admin UI Theme & Design System Modernization
+- [x] **Primary Brand Purple Palette Applied**: `#875A7B`, `#A6789C`, `#714B67`, `#EADBE7`
+- [x] **Core Design System (`frontend/src/index.css`)**:
+  - Defined CSS variables (`--color-primary`, `--color-primary-hover`, `--color-primary-dark`, `--color-accent-light`, `--color-canvas`, `--color-text-main`, `--color-border`).
+- [x] **Top Navbar & Configuration Dropdown (`ConfigurationDropdown.jsx`)**:
+  - Modernized semi-transparent backdrop pill and theme-highlighted configuration links.
+- [x] **Breadcrumbs Navigation (`Breadcrumbs.jsx`)**:
+  - Active hierarchy title and hover accents using brand aubergine.
+- [x] **Role Switcher & Payment QR (`RoleSwitcher.jsx`, `PaymentQRCode.jsx`)**:
+  - Updated selection pills and input focus rings to brand purple.
+- [x] **Executive Dashboard (`Dashboard.jsx`)**:
+  - Signature gradient KPI cards (`linear-gradient(135deg, #714B67 0%, #875A7B 100%)`) and matching MRR/Revenue charts.
+- [x] **Subscriptions & Subscription Details (`SubscriptionsPage.jsx`, `SubscriptionFormPage.jsx`)**:
+  - "Run Billing Day", "New Subscription", "Save", "Send", "Create Invoice", "Renew", and "Upsell" buttons aligned with theme palette.
+  - Quotation progress badge and tabs aligned to `#875A7B`.
+- [x] **Invoices & Payments (`Invoices.jsx`, `PaymentsPage.jsx`)**:
+  - Replaced generic blues with brand purple buttons, badges, table headers, and modal actions.
+- [x] **Products & Product Details (`ProductsPage.jsx`, `ProductsPage.css`, `ProductDetailPage.css`)**:
+  - Kanban card headers, base price badges, variant forms, and tabs updated.
+- [x] **Quotations & Quotation Templates (`QuotationsPage.jsx`, `QuotationDetailPage.jsx`, `QuotationFormPage.css`, `QuotationDetailPage.css`, `QuotationTemplatesPage.css`, `QuotationTemplateDetailPage.jsx`)**:
+  - Total summary cards, order line tables, and template headers converted to theme gradients and borders.
+- [x] **Recurring Plans, Discounts & Taxes (`RecurringPlansPage.jsx`, `DiscountsPage.jsx`, `TaxesPage.css`)**:
+  - Tables, modal forms, and badges harmonized.
+- [x] **Users & Staff Creation (`Users.jsx`)**:
+  - Theme gradient modal actions and role pills.
+- [x] **Customer Detail & Settings (`CustomerDetail.jsx`, `Settings.css`)**:
+  - Metric summary cards, form fields, and save buttons updated.
+- [x] **Reports & Analytics (`ReportsPage.jsx`)**:
+  - Export actions and table styles matching system theme.

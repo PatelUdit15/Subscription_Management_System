@@ -148,7 +148,7 @@ function ProductsPage() {
                 border: 'none',
                 borderRadius: '6px',
                 background: viewMode === 'list' ? 'white' : 'transparent',
-                color: viewMode === 'list' ? '#001D39' : '#71717a',
+                color: viewMode === 'list' ? '#875A7B' : '#71717a',
                 cursor: 'pointer',
                 fontFamily: 'Quicksand, sans-serif',
                 fontWeight: '600',
@@ -166,7 +166,7 @@ function ProductsPage() {
                 border: 'none',
                 borderRadius: '6px',
                 background: viewMode === 'kanban' ? 'white' : 'transparent',
-                color: viewMode === 'kanban' ? '#001D39' : '#71717a',
+                color: viewMode === 'kanban' ? '#875A7B' : '#71717a',
                 cursor: 'pointer',
                 fontFamily: 'Quicksand, sans-serif',
                 fontWeight: '600',
@@ -297,22 +297,22 @@ onClick={() => navigate(`/admin/products/${product.id}`)}
                     background: 'white',
                     borderRadius: '12px',
                     overflow: 'hidden',
-                    boxShadow: '0 2px 8px rgba(0, 29, 57, 0.08)',
+                    boxShadow: '0 2px 8px rgba(135, 90, 123, 0.08)',
                     transition: 'all 0.2s ease',
                     cursor: 'pointer'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 29, 57, 0.15)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(135, 90, 123, 0.15)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 29, 57, 0.08)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(135, 90, 123, 0.08)';
                   }}
                 >
                   <div style={{
                     height: '160px',
-                    background: 'linear-gradient(135deg, #0A4174 0%, #49769F 100%)',
+                    background: 'linear-gradient(135deg, #714B67 0%, #875A7B 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -326,7 +326,7 @@ onClick={() => navigate(`/admin/products/${product.id}`)}
                       fontFamily: 'Gabarito, sans-serif',
                       fontSize: '1.1rem',
                       fontWeight: '700',
-                      color: '#001D39',
+                      color: '#714B67',
                       marginBottom: '0.5rem'
                     }}>
                       {product.name}

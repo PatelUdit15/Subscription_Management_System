@@ -537,16 +537,7 @@ const SubscriptionFormPage = () => {
               onClick={handleNew}
               style={{
                 padding: '0.6rem 1.25rem',
-                background: '#18181b',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
+                background: 'linear-gradient(135deg, #714B67 0%, #875A7B 100%)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 2px 4px rgba(135, 90, 123, 0.2)'
               }}
             >
               New
@@ -601,7 +592,7 @@ const SubscriptionFormPage = () => {
               title="Print"
               style={{
                 padding: '0.6rem',
-                background: '#0A4174',
+                background: '#875A7B',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
@@ -622,7 +613,7 @@ const SubscriptionFormPage = () => {
               title="Export CSV"
               style={{
                 padding: '0.6rem',
-                background: '#49769F',
+                background: '#714B67',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
@@ -649,7 +640,7 @@ const SubscriptionFormPage = () => {
                   title={!isEditMode ? 'Save the subscription first to enable this button' : 'Send quotation to customer'}
                   style={{
                     padding: '0.6rem 1.25rem',
-                    background: !isEditMode ? '#d4d4d8' : '#0A4174',
+                    background: !isEditMode ? '#d4d4d8' : '#875A7B',
                     color: 'white',
                     border: 'none',
                     borderRadius: '6px',
@@ -726,13 +717,7 @@ const SubscriptionFormPage = () => {
                   onClick={handlePreview}
                   style={{
                     padding: '0.6rem 1.25rem',
-                    background: '#49769F',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem'
+                    background: '#875A7B', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem'
                   }}
                 >
                   Preview
@@ -762,13 +747,7 @@ const SubscriptionFormPage = () => {
                   onClick={handleCreateInvoice}
                   style={{
                     padding: '0.6rem 1.25rem',
-                    background: '#18181b',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem'
+                    background: 'linear-gradient(135deg, #714B67 0%, #875A7B 100%)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 2px 4px rgba(135, 90, 123, 0.2)'
                   }}
                 >
                   Create Invoice
@@ -807,13 +786,7 @@ const SubscriptionFormPage = () => {
                   onClick={handleRenew}
                   style={{
                     padding: '0.6rem 1.25rem',
-                    background: '#0A4174',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem'
+                    background: '#875A7B', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem'
                   }}
                 >
                   Renew
@@ -822,13 +795,7 @@ const SubscriptionFormPage = () => {
                   onClick={handleUpsell}
                   style={{
                     padding: '0.6rem 1.25rem',
-                    background: '#49769F',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem'
+                    background: '#875A7B', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem'
                   }}
                 >
                   Upsell
@@ -890,13 +857,13 @@ const SubscriptionFormPage = () => {
             {/* Quotation Badge */}
             <div style={{
               padding: '0.6rem 1.25rem',
-              background: formData.status === 'draft' ? '#0A4174' : '#e5e7eb',
+              background: formData.status === 'draft' ? '#875A7B' : '#e5e7eb',
               color: formData.status === 'draft' ? 'white' : '#71717a',
               borderRadius: '8px',
               fontSize: '0.85rem',
               fontWeight: '600',
-              border: formData.status === 'draft' ? '2px solid #0A4174' : '2px solid #e5e7eb',
-              boxShadow: formData.status === 'draft' ? '0 2px 8px rgba(10, 65, 116, 0.2)' : 'none',
+              border: formData.status === 'draft' ? '2px solid #875A7B' : '2px solid #e5e7eb',
+              boxShadow: formData.status === 'draft' ? '0 2px 8px rgba(135, 90, 123, 0.25)' : 'none',
               transition: 'all 0.3s ease',
               display: 'flex',
               alignItems: 'center',
@@ -974,8 +941,8 @@ const SubscriptionFormPage = () => {
             <div style={{
               marginTop: '1rem',
               padding: '1rem 1.5rem',
-              background: '#dbeafe',
-              border: '2px solid #3b82f6',
+              background: '#FDF8FB',
+              border: '2px solid #EADBE7',
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
@@ -983,10 +950,10 @@ const SubscriptionFormPage = () => {
             }}>
               <span style={{ fontSize: '1.5rem' }}>💡</span>
               <div>
-                <div style={{ fontWeight: '600', color: '#1e40af', marginBottom: '0.25rem' }}>
+                <div style={{ fontWeight: '600', color: '#714B67', marginBottom: '0.25rem' }}>
                   Getting Started
                 </div>
-                <div style={{ fontSize: '0.9rem', color: '#1e3a8a' }}>
+                <div style={{ fontSize: '0.9rem', color: '#875A7B' }}>
                   Fill in the subscription details below, then click the <strong>Save</strong> button (💾) to enable Send and Confirm actions.
                 </div>
               </div>
@@ -1256,9 +1223,9 @@ const SubscriptionFormPage = () => {
               style={{
                 padding: '1rem 2rem',
                 background: activeTab === 'order_lines' ? 'white' : 'transparent',
-                color: activeTab === 'order_lines' ? '#18181b' : '#71717a',
+                color: activeTab === 'order_lines' ? '#875A7B' : '#71717a',
                 border: 'none',
-                borderBottom: activeTab === 'order_lines' ? '3px solid #0A4174' : '3px solid transparent',
+                borderBottom: activeTab === 'order_lines' ? '3px solid #875A7B' : '3px solid transparent',
                 fontWeight: '600',
                 cursor: 'pointer',
                 fontSize: '0.95rem',
@@ -1272,9 +1239,9 @@ const SubscriptionFormPage = () => {
               style={{
                 padding: '1rem 2rem',
                 background: activeTab === 'other_info' ? 'white' : 'transparent',
-                color: activeTab === 'other_info' ? '#18181b' : '#71717a',
+                color: activeTab === 'other_info' ? '#875A7B' : '#71717a',
                 border: 'none',
-                borderBottom: activeTab === 'other_info' ? '3px solid #0A4174' : '3px solid transparent',
+                borderBottom: activeTab === 'other_info' ? '3px solid #875A7B' : '3px solid transparent',
                 fontWeight: '600',
                 cursor: 'pointer',
                 fontSize: '0.95rem',
@@ -1306,13 +1273,7 @@ const SubscriptionFormPage = () => {
                     onClick={addLine}
                     style={{
                       padding: '0.5rem 1rem',
-                      background: '#18181b',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem'
+                      background: 'linear-gradient(135deg, #714B67 0%, #875A7B 100%)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 2px 4px rgba(135, 90, 123, 0.2)'
                     }}
                   >
                     + Add Line

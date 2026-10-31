@@ -73,8 +73,8 @@
   background: white;
   border-radius: 16px;
   padding: 2.5rem;
-  box-shadow: 0 4px 12px rgba(0, 29, 57, 0.08), 0 2px 4px rgba(0, 29, 57, 0.04);
-  border: 1px solid rgba(123, 189, 232, 0.15);
+  box-shadow: 0 4px 12px rgba(135, 90, 123, 0.08), 0 2px 4px rgba(135, 90, 123, 0.04);
+  border: 1px solid rgba(135, 90, 123, 0.15);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -112,20 +112,20 @@
 .form-textarea {
   font-family: var(--font-body);
   padding: 0.75rem 1rem;
-  border: 2px solid rgba(73, 118, 159, 0.15);
+  border: 2px solid rgba(135, 90, 123, 0.15);
   border-radius: 10px;
   font-size: 0.95rem;
   color: var(--primary-dark);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   background: white;
-  box-shadow: 0 1px 3px rgba(0, 29, 57, 0.04);
+  box-shadow: 0 1px 3px rgba(135, 90, 123, 0.04);
 }
 
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: var(--teal-blue);
-  box-shadow: 0 0 0 4px rgba(78, 142, 162, 0.08), 0 2px 8px rgba(0, 29, 57, 0.08);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(135, 90, 123, 0.12), 0 2px 8px rgba(135, 90, 123, 0.08);
   transform: translateY(-1px);
 }
 
@@ -145,7 +145,7 @@
   justify-content: flex-end;
   gap: 1rem;
   padding-top: 1.5rem;
-  border-top: 2px solid rgba(123, 189, 232, 0.2);
+  border-top: 2px solid rgba(135, 90, 123, 0.2);
 }
 
 .btn-primary,
@@ -164,14 +164,14 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--teal-blue) 0%, var(--soft-blue) 100%);
+  background: linear-gradient(135deg, #714B67 0%, #875A7B 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(78, 142, 162, 0.25);
+  box-shadow: 0 2px 8px rgba(135, 90, 123, 0.25);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--soft-blue) 0%, var(--light-accent) 100%);
-  box-shadow: 0 4px 16px rgba(78, 142, 162, 0.35);
+  box-shadow: 0 4px 16px rgba(135, 90, 123, 0.35);
   transform: translateY(-2px);
 }
 
@@ -188,13 +188,13 @@
   background: white;
   color: var(--secondary-dark);
   border: 2px solid var(--muted-blue);
-  box-shadow: 0 2px 4px rgba(0, 29, 57, 0.04);
+  box-shadow: 0 2px 4px rgba(135, 90, 123, 0.04);
 }
 
 .btn-secondary:hover:not(:disabled) {
   background: var(--background-light);
-  border-color: var(--teal-blue);
-  box-shadow: 0 4px 12px rgba(0, 29, 57, 0.08);
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(135, 90, 123, 0.08);
   transform: translateY(-1px);
 }
 

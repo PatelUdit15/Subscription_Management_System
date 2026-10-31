@@ -104,11 +104,11 @@ const CustomerDetail = () => {
         marginBottom: '2rem'
       }}>
         <div style={{
-          background: 'linear-gradient(135deg, #0A4174 0%, #49769F 100%)',
+          background: 'linear-gradient(135deg, #714B67 0%, #875A7B 100%)',
           color: 'white',
           padding: '1.5rem',
           borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0, 29, 57, 0.15)'
+          boxShadow: '0 4px 12px rgba(135, 90, 123, 0.15)'
         }}>
           <div style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.5rem' }}>Total Orders</div>
           <div style={{ fontSize: '2rem', fontWeight: '700', fontFamily: 'Gabarito, sans-serif' }}>
@@ -117,11 +117,11 @@ const CustomerDetail = () => {
         </div>
 
         <div style={{
-          background: 'linear-gradient(135deg, #4E8EA2 0%, #6EA2B3 100%)',
+          background: 'linear-gradient(135deg, #875A7B 0%, #A6789C 100%)',
           color: 'white',
           padding: '1.5rem',
           borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0, 29, 57, 0.15)'
+          boxShadow: '0 4px 12px rgba(135, 90, 123, 0.15)'
         }}>
           <div style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.5rem' }}>Active Subscriptions</div>
           <div style={{ fontSize: '2rem', fontWeight: '700', fontFamily: 'Gabarito, sans-serif' }}>
@@ -134,7 +134,7 @@ const CustomerDetail = () => {
           color: 'white',
           padding: '1.5rem',
           borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0, 29, 57, 0.15)'
+          boxShadow: '0 4px 12px rgba(135, 90, 123, 0.15)'
         }}>
           <div style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.5rem' }}>Total Spent</div>
           <div style={{ fontSize: '2rem', fontWeight: '700', fontFamily: 'Gabarito, sans-serif' }}>

@@ -38,7 +38,7 @@ const SubscriptionsPage = () => {
       const data = res.data;
       setBanner({
         type: 'success',
-        message: `Billing Day Complete: ${data.invoices_created} invoices generated, ${data.subscriptions_closed || 0} subscriptions auto-closed. ${data.skipped_invoices_existing || 0} already billed.`
+        message: `Billing Day Complete: ${data.invoices_created} invoices generated, ${data.subscriptions_closed || 0} subscriptions auto-closed. ${data.skipped_count || 0} skipped.`
       });
       fetchSubscriptions();
       setTimeout(() => setBanner(null), 6000);
@@ -54,9 +54,9 @@ const SubscriptionsPage = () => {
 
   const getStatusBadge = (status) => {
     const statusStyles = {
-      draft: { bg: '#f3f4f6', color: '#6b7280', label: 'Draft' },
-      sent: { bg: '#dbeafe', color: '#1e40af', label: 'Quotation Sent' },
-      confirmed: { bg: '#d1fae5', color: '#065f46', label: 'Confirmed' },
+      draft: { bg: '#f4f4f5', color: '#52525b', label: 'Draft' },
+      sent: { bg: '#f3e8ff', color: '#7c3aed', label: 'Quotation Sent' },
+      confirmed: { bg: 'var(--color-accent-light)', color: 'var(--color-primary-dark)', label: 'Confirmed' },
       active: { bg: '#dcfce7', color: '#166534', label: 'Active' },
       paused: { bg: '#fef3c7', color: '#92400e', label: 'Paused' },
       closed: { bg: '#f1f5f9', color: '#475569', label: 'Closed' },
@@ -71,7 +71,7 @@ const SubscriptionsPage = () => {
       <span style={{
         background: style.bg,
         color: style.color,
-        padding: '0.25rem 0.75rem',
+        padding: '0.3rem 0.75rem',
         borderRadius: '12px',
         fontSize: '0.8rem',
         fontWeight: '600',
@@ -129,7 +129,7 @@ const SubscriptionsPage = () => {
   });
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'Quicksand, sans-serif' }}>
+    <div style={{ padding: '2rem', fontFamily: 'var(--font-body)' }}>
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -141,14 +141,14 @@ const SubscriptionsPage = () => {
       }}>
         <div>
           <h1 style={{
-            fontFamily: 'Gabarito, sans-serif',
+            fontFamily: 'var(--font-heading)',
             fontSize: '2rem',
-            color: '#18181b',
+            color: 'var(--color-primary-dark)',
             margin: '0 0 0.5rem 0'
           }}>
             Subscriptions
           </h1>
-          <p style={{ color: '#71717a', fontSize: '0.95rem', margin: 0 }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', margin: 0 }}>
             Manage customer subscriptions, plan terms, and recurring billing cycles
           </p>
         </div>
@@ -158,8 +158,8 @@ const SubscriptionsPage = () => {
             onClick={handleRunBillingDay}
             disabled={billingLoading}
             style={{
-              padding: '0.75rem 1.25rem',
-              background: '#2563eb',
+              padding: '0.65rem 1.25rem',
+              background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
@@ -168,7 +168,8 @@ const SubscriptionsPage = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
+              boxShadow: '0 4px 12px rgba(135, 90, 123, 0.25)',
+              transition: 'all 0.2s ease'
             }}
           >
             <span>⚡</span> {billingLoading ? 'Processing...' : 'Run Billing Day'}
@@ -177,16 +178,24 @@ const SubscriptionsPage = () => {
           <button
             onClick={() => navigate('/admin/subscriptions/new')}
             style={{
-              padding: '0.75rem 1.25rem',
-              background: '#18181b',
-              color: 'white',
-              border: 'none',
+              padding: '0.65rem 1.25rem',
+              background: 'white',
+              color: 'var(--color-primary-dark)',
+              border: '2px solid var(--color-primary)',
               borderRadius: '8px',
               fontWeight: '600',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem'
+              gap: '0.5rem',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--color-accent-light)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'white';
             }}
           >
             <span>+</span> New Subscription
@@ -211,7 +220,7 @@ const SubscriptionsPage = () => {
       )}
 
       {/* Status Filter Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
         {[
           { key: 'all', label: 'All Subscriptions' },
           { key: 'active', label: 'Active' },
@@ -226,14 +235,16 @@ const SubscriptionsPage = () => {
             style={{
               padding: '0.5rem 1rem',
               borderRadius: '20px',
-              border: '1px solid',
-              borderColor: statusFilter === tab.key ? '#18181b' : '#e4e4e7',
-              background: statusFilter === tab.key ? '#18181b' : '#fff',
-              color: statusFilter === tab.key ? '#fff' : '#52525b',
+              border: '1.5px solid',
+              borderColor: statusFilter === tab.key ? 'var(--color-primary)' : 'rgba(135, 90, 123, 0.2)',
+              background: statusFilter === tab.key ? 'var(--color-primary)' : '#fff',
+              color: statusFilter === tab.key ? '#fff' : 'var(--color-text-secondary)',
               fontSize: '0.85rem',
               fontWeight: '600',
               cursor: 'pointer',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              boxShadow: statusFilter === tab.key ? '0 2px 8px rgba(135, 90, 123, 0.25)' : 'none',
+              transition: 'all 0.2s ease'
             }}
           >
             {tab.label}
@@ -245,8 +256,8 @@ const SubscriptionsPage = () => {
       <div style={{
         background: 'white',
         padding: '1rem',
-        borderRadius: '12px 12px 0 0',
-        border: '1px solid #e5e7eb',
+        borderRadius: '14px 14px 0 0',
+        border: '1px solid rgba(135, 90, 123, 0.15)',
         borderBottom: 'none',
         display: 'flex',
         gap: '1rem',
@@ -257,12 +268,13 @@ const SubscriptionsPage = () => {
           onClick={handleExportCSV}
           style={{
             padding: '0.5rem 1rem',
-            background: '#f9fafb',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
+            background: 'var(--color-bg-soft)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '8px',
             cursor: 'pointer',
             fontSize: '0.9rem',
-            fontWeight: '500'
+            fontWeight: '600',
+            color: 'var(--color-text-primary)'
           }}
         >
           📋 Export CSV
@@ -271,12 +283,13 @@ const SubscriptionsPage = () => {
           onClick={() => window.print()}
           style={{
             padding: '0.5rem 1rem',
-            background: '#f9fafb',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
+            background: 'var(--color-bg-soft)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '8px',
             cursor: 'pointer',
             fontSize: '0.9rem',
-            fontWeight: '500'
+            fontWeight: '600',
+            color: 'var(--color-text-primary)'
           }}
         >
           🖨️ Print
@@ -288,21 +301,25 @@ const SubscriptionsPage = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
-            padding: '0.5rem 1rem',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
+            padding: '0.55rem 1rem',
+            border: '1.5px solid rgba(135, 90, 123, 0.2)',
+            borderRadius: '8px',
             width: '280px',
-            fontSize: '0.9rem'
+            fontSize: '0.9rem',
+            outline: 'none'
           }}
+          onFocus={(e) => e.target.style.borderColor = 'var(--color-primary)'}
+          onBlur={(e) => e.target.style.borderColor = 'rgba(135, 90, 123, 0.2)'}
         />
       </div>
 
       {/* Table */}
       <div style={{
         background: 'white',
-        borderRadius: '0 0 12px 12px',
-        border: '1px solid #e5e7eb',
-        overflow: 'hidden'
+        borderRadius: '0 0 14px 14px',
+        border: '1px solid rgba(135, 90, 123, 0.15)',
+        overflow: 'hidden',
+        boxShadow: '0 4px 12px rgba(135, 90, 123, 0.06)'
       }}>
         <table style={{
           width: '100%',
@@ -310,15 +327,14 @@ const SubscriptionsPage = () => {
         }}>
           <thead>
             <tr style={{
-              background: '#f9fafb',
-              borderBottom: '1px solid #e5e7eb'
+              background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
+              color: 'white'
             }}>
               <th style={{
-                padding: '1rem',
+                padding: '0.9rem 1.25rem',
                 textAlign: 'left',
                 fontWeight: '600',
                 fontSize: '0.85rem',
-                color: '#6b7280',
                 width: '50px'
               }}>
                 <input
@@ -328,22 +344,22 @@ const SubscriptionsPage = () => {
                   style={{ cursor: 'pointer' }}
                 />
               </th>
-              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>
                 Number
               </th>
-              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>
                 Customer
               </th>
-              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>
                 Next Billing Date
               </th>
-              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>
                 Recurring Amount
               </th>
-              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>
                 Plan
               </th>
-              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
+              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem' }}>
                 Status
               </th>
             </tr>
@@ -351,16 +367,16 @@ const SubscriptionsPage = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="7" style={{ padding: '3rem', textAlign: 'center', color: '#71717a' }}>
+                <td colSpan="7" style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
                   Loading subscriptions...
                 </td>
               </tr>
             ) : filteredSubscriptions.length === 0 ? (
               <tr>
                 <td colSpan="7" style={{ padding: '3rem', textAlign: 'center' }}>
-                  <div style={{ color: '#71717a' }}>
+                  <div style={{ color: 'var(--color-text-secondary)' }}>
                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--color-primary-dark)' }}>
                       No subscriptions found
                     </div>
                     <div style={{ fontSize: '0.9rem' }}>
@@ -375,14 +391,14 @@ const SubscriptionsPage = () => {
                   key={subscription.id}
                   onClick={() => navigate(`/admin/subscriptions/${subscription.id}`)}
                   style={{
-                    borderBottom: '1px solid #f3f4f6',
+                    borderBottom: '1px solid rgba(135, 90, 123, 0.08)',
                     cursor: 'pointer',
                     transition: 'background 0.15s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(234, 219, 231, 0.2)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
                 >
-                  <td style={{ padding: '1rem' }} onClick={(e) => e.stopPropagation()}>
+                  <td style={{ padding: '0.9rem 1.25rem' }} onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedItems.includes(subscription.id)}
@@ -390,24 +406,24 @@ const SubscriptionsPage = () => {
                       style={{ cursor: 'pointer' }}
                     />
                   </td>
-                  <td style={{ padding: '1rem', fontWeight: '600', color: '#18181b' }}>
+                  <td style={{ padding: '0.9rem 1.25rem', fontWeight: '600', color: 'var(--color-primary-dark)' }}>
                     {subscription.number || `S${String(subscription.id).padStart(4, '0')}`}
                   </td>
-                  <td style={{ padding: '1rem', color: '#18181b' }}>
+                  <td style={{ padding: '0.9rem 1.25rem', color: 'var(--color-text-primary)' }}>
                     {subscription.customer_name || 'N/A'}
                   </td>
-                  <td style={{ padding: '1rem', color: '#18181b' }}>
+                  <td style={{ padding: '0.9rem 1.25rem', color: 'var(--color-text-secondary)' }}>
                     {subscription.next_billing_date 
                       ? new Date(subscription.next_billing_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : 'N/A'}
                   </td>
-                  <td style={{ padding: '1rem', color: '#18181b', fontWeight: '600' }}>
+                  <td style={{ padding: '0.9rem 1.25rem', color: 'var(--color-primary-dark)', fontWeight: '700' }}>
                     ₹{(subscription.recurring_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
-                  <td style={{ padding: '1rem', color: '#18181b' }}>
+                  <td style={{ padding: '0.9rem 1.25rem', color: 'var(--color-text-primary)' }}>
                     {subscription.plan_name || 'Standard'}
                   </td>
-                  <td style={{ padding: '1rem' }}>
+                  <td style={{ padding: '0.9rem 1.25rem' }}>
                     {getStatusBadge(subscription.status)}
                   </td>
                 </tr>

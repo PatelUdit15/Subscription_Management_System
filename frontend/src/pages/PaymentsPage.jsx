@@ -218,7 +218,7 @@ const PaymentsPage = () => {
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.9rem', fontWeight: '800', color: '#0A2540', margin: 0, fontFamily: 'Gabarito, sans-serif' }}>
+          <h1 style={{ fontSize: '1.9rem', fontWeight: '800', color: '#2E2E2E', margin: 0, fontFamily: 'Gabarito, sans-serif' }}>
             Payment Management & Invoice Settlement
           </h1>
           <p style={{ color: '#64748b', fontSize: '0.95rem', margin: '0.35rem 0 0' }}>
@@ -233,13 +233,13 @@ const PaymentsPage = () => {
               alignItems: 'center',
               gap: '0.5rem',
               padding: '0.75rem 1.25rem',
-              background: '#ffffff',
-              color: '#0A2540',
-              border: '1px solid #cbd5e1',
+              background: 'linear-gradient(135deg, #714B67 0%, #875A7B 100%)',
+              color: 'white',
+              border: 'none',
               borderRadius: '8px',
               fontWeight: '600',
               cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+              boxShadow: '0 2px 4px rgba(135, 90, 123, 0.2)'
             }}
           >
             <PlusCircle size={18} />
@@ -379,7 +379,7 @@ const PaymentsPage = () => {
             <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>
               Outstanding Invoices
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0A2540' }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#2E2E2E' }}>
               {summary.outstanding_invoices_count}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
@@ -415,7 +415,7 @@ const PaymentsPage = () => {
             <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>
               Paid Invoices
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0A2540' }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#2E2E2E' }}>
               {summary.paid_invoices_count}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: '600' }}>
@@ -442,7 +442,7 @@ const PaymentsPage = () => {
             onClick={() => setActiveTab('outstanding')}
             style={{
               padding: '0.75rem 1.25rem',
-              background: activeTab === 'outstanding' ? '#0A2540' : 'transparent',
+              background: activeTab === 'outstanding' ? 'linear-gradient(135deg, #714B67 0%, #875A7B 100%)' : 'transparent',
               color: activeTab === 'outstanding' ? '#ffffff' : '#64748b',
               border: 'none',
               borderRadius: '8px',
@@ -470,7 +470,7 @@ const PaymentsPage = () => {
             onClick={() => setActiveTab('history')}
             style={{
               padding: '0.75rem 1.25rem',
-              background: activeTab === 'history' ? '#0A2540' : 'transparent',
+              background: activeTab === 'history' ? 'linear-gradient(135deg, #714B67 0%, #875A7B 100%)' : 'transparent',
               color: activeTab === 'history' ? '#ffffff' : '#64748b',
               border: 'none',
               borderRadius: '8px',
