@@ -1,0 +1,148 @@
+/* Import shared styles */
+@import './ProductsPage.css';
+
+.product-detail-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Back Button */
+.btn-back {
+  background: none;
+  border: none;
+  color: var(--teal-blue);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  margin-bottom: 1rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-back:hover {
+  color: var(--soft-blue);
+  transform: translateX(-4px);
+}
+
+/* Tabs */
+.tabs-container {
+  background: white;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 2px 8px rgba(0, 29, 57, 0.06);
+  margin-top: 2rem;
+  border: 1px solid rgba(123, 189, 232, 0.15);
+  border-bottom: none;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  padding: 0;
+}
+
+.tab {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 1.25rem 2rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted-blue);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 3px solid transparent;
+  position: relative;
+}
+
+.tab:hover {
+  background: rgba(189, 216, 233, 0.08);
+  color: var(--teal-blue);
+}
+
+.tab.active {
+  color: var(--teal-blue);
+  border-bottom-color: var(--teal-blue);
+  background: rgba(189, 216, 233, 0.12);
+}
+
+/* Tab Content */
+.tab-content {
+  background: white;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 4px 12px rgba(0, 29, 57, 0.08);
+  padding: 2rem;
+  border: 1px solid rgba(123, 189, 232, 0.15);
+  border-top: none;
+}
+
+.general-tab form {
+  max-width: 800px;
+  padding: 0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid rgba(123, 189, 232, 0.2);
+  margin-top: 2rem;
+}
+
+/* Variants Tab */
+.variants-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 2rem;
+}
+
+.variants-subtitle {
+  font-family: var(--font-body);
+  color: var(--muted-blue);
+  font-size: 0.95rem;
+  margin: 0;
+  flex: 1;
+}
+
+.total-price {
+  color: var(--teal-blue);
+  font-size: 1.05rem;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted-blue);
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tabs {
+    flex-direction: column;
+  }
+
+  .tab {
+    border-bottom: 1px solid rgba(123, 189, 232, 0.15);
+    border-left: 3px solid transparent;
+  }
+
+  .tab.active {
+    border-bottom-color: rgba(123, 189, 232, 0.15);
+    border-left-color: var(--teal-blue);
+  }
+
+  .variants-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tab-content {
+    padding: 1.5rem;
+  }
+}

@@ -1,0 +1,8 @@
+/* Import shared styles from TaxesPage.css */
+@import './TaxesPage.css';
+
+/* Additional styles specific to Discounts */
+.date-range {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}

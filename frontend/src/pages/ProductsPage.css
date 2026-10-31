@@ -1,0 +1,23 @@
+/* Import shared styles from TaxesPage.css */
+@import './TaxesPage.css';
+
+/* Additional styles specific to Products */
+textarea {
+  width: 100%;
+  font-family: var(--font-body);
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(73, 118, 159, 0.15);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: var(--primary-dark);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 29, 57, 0.04);
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--teal-blue);
+  box-shadow: 0 0 0 4px rgba(78, 142, 162, 0.08), 0 2px 8px rgba(0, 29, 57, 0.08);
+  transform: translateY(-1px);
+}

@@ -1,0 +1,7 @@
+/* Import shared styles */
+@import './TaxesPage.css';
+
+.quotations-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
