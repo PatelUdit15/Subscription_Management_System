@@ -14,3 +14,4 @@ class PasswordResetOTP(Base):
 
     def is_valid(self) -> bool:
         return not self.is_used and datetime.utcnow() <= self.expires_at
+

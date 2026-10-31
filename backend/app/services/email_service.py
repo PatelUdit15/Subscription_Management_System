@@ -143,3 +143,4 @@ def send_password_reset_otp_email(to_email: str, otp: str, user_name: Optional[s
         print(f"[ERROR] {error_msg}")
         logger.error(error_msg)
         return False, error_msg
+

@@ -97,7 +97,11 @@ function Login() {
       const successMsg = res.data?.message || `A 6-digit verification code has been sent to ${emailTrimmed} via Google Mail.`;
       setForgotSuccess(res.data?.dev_otp ? `${successMsg} [Dev OTP: ${res.data.dev_otp}]` : successMsg);
     } catch (err) {
-      setForgotError(err.response?.data?.detail || 'Failed to send verification code. Please check your email.');
+      if (!err.response) {
+        setForgotError('Cannot reach backend server. Please ensure the backend is running at http://localhost:8000.');
+      } else {
+        setForgotError(err.response?.data?.detail || 'Failed to send verification code. Please check your email.');
+      }
     } finally {
       setForgotLoading(false);
     }
@@ -152,7 +156,11 @@ function Login() {
       setShowForgotModal(false);
       setFormData(prev => ({ ...prev, email: forgotEmail, password: '' }));
     } catch (err) {
-      setForgotError(err.response?.data?.detail || 'Failed to reset password. Please check your verification code.');
+      if (!err.response) {
+        setForgotError('Cannot reach backend server. Please ensure the backend is running at http://localhost:8000.');
+      } else {
+        setForgotError(err.response?.data?.detail || 'Failed to reset password. Please check your verification code.');
+      }
     } finally {
       setForgotLoading(false);
     }
