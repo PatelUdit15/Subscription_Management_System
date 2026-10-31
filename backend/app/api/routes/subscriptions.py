@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
-from datetime import datetime, date
+from typing import List, Optional
+from datetime import datetime, date, timedelta
+from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel
+import secrets
+
 from app.db.base import get_db
 from app.api.routes.auth import get_current_user
 from app.models.user import User
@@ -11,15 +14,19 @@ from app.models.subscription_line import SubscriptionLine
 from app.models.customer import Customer
 from app.models.product import Product
 from app.models.recurring_plan import RecurringPlan
+from app.models.invoice import Invoice, InvoiceStatus
+from app.models.invoice_line import InvoiceLine
+from app.models.tax import Tax
+from app.models.discount import Discount
 
 router = APIRouter()
 
 # Schemas
 class SubscriptionLineCreate(BaseModel):
     product_id: int
-    variant_id: int = None
-    description: str = None
-    quantity: float
+    variant_id: Optional[int] = None
+    description: Optional[str] = None
+    quantity: float = 1.0
     unit_price: float
     discount: float = 0.0
     tax_rate: float = 0.0
@@ -28,33 +35,65 @@ class SubscriptionCreate(BaseModel):
     customer_id: int
     product_id: int
     recurring_plan_id: int
-    start_date: date = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     lines: List[SubscriptionLineCreate] = []
 
 class SubscriptionUpdate(BaseModel):
-    customer_id: int = None
-    status: SubscriptionStatus = None
-    start_date: date = None
-    next_billing_date: date = None
-    recurring_amount: float = None
-    payment_done: bool = None
+    customer_id: Optional[int] = None
+    status: Optional[SubscriptionStatus] = None
+    start_date: Optional[date] = None
+    next_billing_date: Optional[date] = None
+    end_date: Optional[date] = None
+    recurring_amount: Optional[float] = None
+    payment_done: Optional[bool] = None
+
+class BillingDayRequest(BaseModel):
+    target_date: Optional[date] = None
 
 def generate_subscription_number(db: Session) -> str:
     """Generate subscription number: S0001, S0002, etc."""
-    last_subscription = db.query(Subscription).filter(
+    last_sub = db.query(Subscription).filter(
         Subscription.number.isnot(None)
-    ).order_by(Subscription.number.desc()).first()
+    ).order_by(Subscription.id.desc()).first()
     
-    if last_subscription and last_subscription.number:
+    if last_sub and last_sub.number and last_sub.number.startswith('S'):
         try:
-            last_number = int(last_subscription.number[1:])  # Remove 'S' prefix
-            new_number = last_number + 1
-        except:
-            new_number = 1
-    else:
-        new_number = 1
+            last_num = int(last_sub.number.replace('S', ''))
+            return f"S{last_num + 1:04d}"
+        except Exception:
+            pass
+    count = db.query(Subscription).count() + 1
+    return f"S{count:04d}"
+
+def generate_invoice_number_helper(db: Session) -> str:
+    """Generate sequential invoice number: INV/YYYY/NNNN"""
+    year = datetime.now().year
+    prefix = f"INV/{year}/"
+    last_inv = db.query(Invoice).filter(
+        Invoice.number.like(f"{prefix}%")
+    ).order_by(Invoice.id.desc()).first()
     
-    return f"S{new_number:04d}"
+    if last_inv and last_inv.number:
+        try:
+            num = int(last_inv.number.split('/')[-1])
+            return f"{prefix}{num + 1:04d}"
+        except Exception:
+            pass
+    count = db.query(Invoice).count() + 1
+    return f"{prefix}{count:04d}"
+
+def advance_billing_date(start_date: date, billing_period: str) -> date:
+    period = str(billing_period).lower().replace('billingperiod.', '')
+    if period in ('daily', 'day', 'days'):
+        return start_date + timedelta(days=1)
+    elif period in ('weekly', 'weeks', 'week'):
+        return start_date + timedelta(weeks=1)
+    elif period in ('monthly', 'month', 'months'):
+        return start_date + relativedelta(months=1)
+    elif period in ('yearly', 'year', 'years'):
+        return start_date + relativedelta(years=1)
+    return start_date + relativedelta(months=1)
 
 @router.get("/subscriptions")
 def get_subscriptions(
@@ -62,7 +101,7 @@ def get_subscriptions(
     current_user: User = Depends(get_current_user)
 ):
     """Get all subscriptions"""
-    subscriptions = db.query(Subscription).all()
+    subscriptions = db.query(Subscription).order_by(Subscription.id.desc()).all()
     
     result = []
     for sub in subscriptions:
@@ -79,8 +118,10 @@ def get_subscriptions(
             "plan_name": plan.name if plan else "N/A",
             "start_date": sub.start_date.isoformat() if sub.start_date else None,
             "next_billing_date": sub.next_billing_date.isoformat() if sub.next_billing_date else None,
+            "end_date": sub.end_date.isoformat() if sub.end_date else None,
             "status": sub.status.value,
             "recurring_amount": sub.recurring_amount,
+            "payment_done": sub.payment_done,
             "created_at": sub.created_at.isoformat() if sub.created_at else None
         })
     
@@ -97,7 +138,6 @@ def get_subscription(
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
     
-    # Get related data
     customer = db.query(Customer).filter(Customer.id == subscription.customer_id).first()
     product = db.query(Product).filter(Product.id == subscription.product_id).first()
     plan = db.query(RecurringPlan).filter(RecurringPlan.id == subscription.recurring_plan_id).first()
@@ -112,10 +152,18 @@ def get_subscription(
         "product_name": product.name if product else "N/A",
         "recurring_plan_id": subscription.recurring_plan_id,
         "plan_name": plan.name if plan else "N/A",
+        "plan_details": {
+            "billing_period": plan.billing_period.value if plan else None,
+            "is_closable": getattr(plan, 'is_closable', True) if plan else True,
+            "is_pausable": getattr(plan, 'is_pausable', True) if plan else True,
+            "can_renew": getattr(plan, 'can_renew', True) if plan else True
+        } if plan else None,
         "start_date": subscription.start_date.isoformat() if subscription.start_date else None,
         "next_billing_date": subscription.next_billing_date.isoformat() if subscription.next_billing_date else None,
+        "end_date": subscription.end_date.isoformat() if subscription.end_date else None,
         "status": subscription.status.value,
         "recurring_amount": subscription.recurring_amount,
+        "payment_done": subscription.payment_done,
         "created_at": subscription.created_at.isoformat() if subscription.created_at else None,
         "lines": [
             {
@@ -140,12 +188,18 @@ def create_subscription(
     current_user: User = Depends(get_current_user)
 ):
     """Create new subscription"""
-    # Create subscription
+    start_d = subscription_data.start_date or date.today()
+    plan = db.query(RecurringPlan).filter(RecurringPlan.id == subscription_data.recurring_plan_id).first()
+    period = plan.billing_period.value if plan else "monthly"
+    next_billing = advance_billing_date(start_d, period)
+    
     subscription = Subscription(
         customer_id=subscription_data.customer_id,
         product_id=subscription_data.product_id,
         recurring_plan_id=subscription_data.recurring_plan_id,
-        start_date=subscription_data.start_date,
+        start_date=start_d,
+        next_billing_date=next_billing,
+        end_date=subscription_data.end_date,
         status=SubscriptionStatus.draft,
         created_at=datetime.utcnow()
     )
@@ -153,11 +207,10 @@ def create_subscription(
     db.add(subscription)
     db.flush()
     
-    # Create subscription lines
     total_amount = 0.0
     for line_data in subscription_data.lines:
-        subtotal = (line_data.quantity * line_data.unit_price) - line_data.discount
-        subtotal += subtotal * (line_data.tax_rate / 100)
+        line_base = (line_data.quantity * line_data.unit_price) - line_data.discount
+        subtotal = max(0.0, line_base + (line_base * (line_data.tax_rate / 100)))
         
         line = SubscriptionLine(
             subscription_id=subscription.id,
@@ -174,11 +227,10 @@ def create_subscription(
         total_amount += subtotal
     
     subscription.recurring_amount = total_amount
-    
     db.commit()
     db.refresh(subscription)
     
-    return {"id": subscription.id, "status": subscription.status.value}
+    return {"id": subscription.id, "status": subscription.status.value, "recurring_amount": subscription.recurring_amount}
 
 @router.put("/subscriptions/{subscription_id}")
 def update_subscription(
@@ -187,7 +239,7 @@ def update_subscription(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Update subscription"""
+    """Update subscription attributes"""
     subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
@@ -200,6 +252,8 @@ def update_subscription(
         subscription.start_date = subscription_data.start_date
     if subscription_data.next_billing_date is not None:
         subscription.next_billing_date = subscription_data.next_billing_date
+    if subscription_data.end_date is not None:
+        subscription.end_date = subscription_data.end_date
     if subscription_data.recurring_amount is not None:
         subscription.recurring_amount = subscription_data.recurring_amount
     if subscription_data.payment_done is not None:
@@ -207,7 +261,6 @@ def update_subscription(
     
     db.commit()
     db.refresh(subscription)
-    
     return {"id": subscription.id, "status": subscription.status.value}
 
 @router.post("/subscriptions/{subscription_id}/confirm")
@@ -216,21 +269,23 @@ def confirm_subscription(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Confirm subscription and generate number"""
+    """Confirm subscription and generate official sequence number"""
     subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
     
-    # Generate subscription number
     if not subscription.number:
         subscription.number = generate_subscription_number(db)
     
-    # Set start date to today if not set
     if not subscription.start_date:
         subscription.start_date = date.today()
+        
+    if not subscription.next_billing_date:
+        plan = db.query(RecurringPlan).filter(RecurringPlan.id == subscription.recurring_plan_id).first()
+        period = plan.billing_period.value if plan else "monthly"
+        subscription.next_billing_date = advance_billing_date(subscription.start_date, period)
     
-    # Update status
-    subscription.status = SubscriptionStatus.confirmed
+    subscription.status = SubscriptionStatus.active
     
     db.commit()
     db.refresh(subscription)
@@ -240,111 +295,66 @@ def confirm_subscription(
         "number": subscription.number,
         "status": subscription.status.value,
         "start_date": subscription.start_date.isoformat(),
+        "next_billing_date": subscription.next_billing_date.isoformat() if subscription.next_billing_date else None,
         "share_token": subscription.share_token
     }
 
-@router.post("/subscriptions/{subscription_id}/generate-share-link")
-def generate_share_link(
+@router.post("/subscriptions/{subscription_id}/pause")
+def pause_subscription(
     subscription_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Generate a unique share link for the subscription"""
-    import secrets
-    
+    """Pause an active subscription if plan permits"""
     subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
     
-    # Generate unique token if not exists
-    if not subscription.share_token:
-        subscription.share_token = secrets.token_urlsafe(32)
-        db.commit()
-        db.refresh(subscription)
-    
-    return {
-        "share_token": subscription.share_token,
-        "share_url": f"/share/subscription/{subscription.share_token}"
-    }
-
-@router.get("/share/subscription/{share_token}")
-def get_shared_subscription(
-    share_token: str,
-    db: Session = Depends(get_db)
-):
-    """Get subscription by share token (public access)"""
-    subscription = db.query(Subscription).filter(Subscription.share_token == share_token).first()
-    if not subscription:
-        raise HTTPException(status_code=404, detail="Subscription not found")
-    
-    # Get related data
-    customer = db.query(Customer).filter(Customer.id == subscription.customer_id).first()
-    product = db.query(Product).filter(Product.id == subscription.product_id).first()
     plan = db.query(RecurringPlan).filter(RecurringPlan.id == subscription.recurring_plan_id).first()
-    lines = db.query(SubscriptionLine).filter(SubscriptionLine.subscription_id == subscription.id).all()
+    if plan and not getattr(plan, 'is_pausable', True):
+        raise HTTPException(status_code=400, detail="This recurring plan does not permit pausing")
     
-    return {
-        "id": subscription.id,
-        "number": subscription.number,
-        "customer_name": customer.name if customer else "N/A",
-        "product_name": product.name if product else "N/A",
-        "plan_name": plan.name if plan else "N/A",
-        "start_date": subscription.start_date.isoformat() if subscription.start_date else None,
-        "status": subscription.status.value,
-        "recurring_amount": subscription.recurring_amount,
-        "signature_data": subscription.signature_data,
-        "signed_by": subscription.signed_by,
-        "signed_at": subscription.signed_at.isoformat() if subscription.signed_at else None,
-        "lines": [
-            {
-                "product_id": line.product_id,
-                "quantity": line.quantity,
-                "unit_price": line.unit_price,
-                "subtotal": line.subtotal
-            }
-            for line in lines
-        ]
-    }
-
-@router.post("/subscriptions/{subscription_id}/sign")
-def sign_subscription(
-    subscription_id: int,
-    signature_data: dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Add digital signature to subscription"""
-    subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
-    if not subscription:
-        raise HTTPException(status_code=404, detail="Subscription not found")
-    
-    if subscription.status != SubscriptionStatus.sent:
-        raise HTTPException(status_code=400, detail="Only sent subscriptions can be signed")
-    
-    # Save signature data
-    subscription.signature_data = signature_data.get("signature_data")
-    subscription.signed_by = signature_data.get("signed_by")
-    subscription.signed_at = datetime.utcnow()
-    subscription.status = SubscriptionStatus.confirmed
-    
-    # Generate subscription number if not exists
-    if not subscription.number:
-        subscription.number = generate_subscription_number(db)
-    
-    # Set start date to today if not set
-    if not subscription.start_date:
-        subscription.start_date = date.today()
-    
+    subscription.status = SubscriptionStatus.paused
     db.commit()
     db.refresh(subscription)
+    return {"id": subscription.id, "status": subscription.status.value, "message": "Subscription paused successfully"}
+
+@router.post("/subscriptions/{subscription_id}/resume")
+def resume_subscription(
+    subscription_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Resume a paused subscription"""
+    subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
     
-    return {
-        "id": subscription.id,
-        "number": subscription.number,
-        "status": subscription.status.value,
-        "signed_by": subscription.signed_by,
-        "signed_at": subscription.signed_at.isoformat()
-    }
+    subscription.status = SubscriptionStatus.active
+    db.commit()
+    db.refresh(subscription)
+    return {"id": subscription.id, "status": subscription.status.value, "message": "Subscription resumed successfully"}
+
+@router.post("/subscriptions/{subscription_id}/close")
+def close_subscription(
+    subscription_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Close / cancel a subscription early if plan permits"""
+    subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    plan = db.query(RecurringPlan).filter(RecurringPlan.id == subscription.recurring_plan_id).first()
+    if plan and not getattr(plan, 'is_closable', True):
+        raise HTTPException(status_code=400, detail="This recurring plan cannot be closed early")
+    
+    subscription.status = SubscriptionStatus.closed
+    subscription.end_date = date.today()
+    db.commit()
+    db.refresh(subscription)
+    return {"id": subscription.id, "status": subscription.status.value, "message": "Subscription closed successfully"}
 
 @router.post("/subscriptions/{subscription_id}/create-invoice")
 def create_invoice_from_subscription(
@@ -352,106 +362,293 @@ def create_invoice_from_subscription(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create an invoice from a confirmed subscription"""
-    from app.models.invoice import Invoice, InvoiceStatus
-    from app.models.invoice_line import InvoiceLine
-    from datetime import timedelta
+    """Create an invoice from a subscription (active or confirmed)"""
+    subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
     
-    try:
-        # Validate subscription exists
-        subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
-        if not subscription:
-            raise HTTPException(status_code=404, detail="Subscription not found")
+    customer = db.query(Customer).filter(Customer.id == subscription.customer_id).first()
+    customer_name = customer.name if customer else "Subscription Customer"
+    
+    invoice_number = generate_invoice_number_helper(db)
+    today = date.today()
+    
+    invoice = Invoice(
+        number=invoice_number,
+        subscription_id=subscription.id,
+        customer_name=customer_name,
+        date_issued=today,
+        due_date=today + timedelta(days=30),
+        total_amount=0.0,
+        status=InvoiceStatus.posted,
+        notes=f"Invoice for subscription {subscription.number or subscription.id}"
+    )
+    db.add(invoice)
+    db.flush()
+    
+    subscription_lines = db.query(SubscriptionLine).filter(
+        SubscriptionLine.subscription_id == subscription.id
+    ).all()
+    
+    total_amount = 0.0
+    if not subscription_lines:
+        unit_price = subscription.recurring_amount or 0.0
+        line = InvoiceLine(
+            invoice_id=invoice.id,
+            product_id=subscription.product_id,
+            variant_id=None,
+            quantity=1.0,
+            unit_price=unit_price,
+            tax_rate=0.0,
+            price_subtotal=unit_price
+        )
+        db.add(line)
+        total_amount = unit_price
+    else:
+        for sub_line in subscription_lines:
+            line = InvoiceLine(
+                invoice_id=invoice.id,
+                product_id=sub_line.product_id,
+                variant_id=getattr(sub_line, 'variant_id', None),
+                description=getattr(sub_line, 'description', None),
+                quantity=sub_line.quantity,
+                unit_price=sub_line.unit_price,
+                tax_rate=getattr(sub_line, 'tax_rate', 0.0),
+                price_subtotal=sub_line.subtotal
+            )
+            db.add(line)
+            total_amount += sub_line.subtotal
+    
+    invoice.total_amount = total_amount
+    
+    # Advance billing date if present
+    plan = db.query(RecurringPlan).filter(RecurringPlan.id == subscription.recurring_plan_id).first()
+    period = plan.billing_period.value if plan else "monthly"
+    subscription.next_billing_date = advance_billing_date(subscription.next_billing_date or today, period)
+    subscription.status = SubscriptionStatus.active
+    
+    db.commit()
+    db.refresh(invoice)
+    
+    return {
+        "id": invoice.id,
+        "invoice_number": invoice.number,
+        "amount": invoice.total_amount,
+        "status": invoice.status.value,
+        "date_issued": invoice.date_issued.isoformat(),
+        "due_date": invoice.due_date.isoformat(),
+        "next_billing_date": subscription.next_billing_date.isoformat()
+    }
+
+@router.post("/subscriptions/run-billing-day")
+def run_billing_day(
+    req: BillingDayRequest = BillingDayRequest(),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Billing Day Engine (Scene 4):
+    Automatically creates invoices for all subscriptions due on or before target_date.
+    Ensures:
+    - No double-billing (idempotent per billing day).
+    - Prepopulates customer, product lines, taxes, and amounts.
+    - Automatically advances next_billing_date.
+    - Automatically auto-closes subscriptions if plan.auto_close is set and end_date reached.
+    """
+    billing_day = req.target_date or date.today()
+    
+    # Query subscriptions that are active or confirmed
+    subscriptions = db.query(Subscription).filter(
+        Subscription.status.in_([SubscriptionStatus.active, SubscriptionStatus.confirmed])
+    ).all()
+    
+    invoices_created = []
+    skipped_count = 0
+    closed_count = 0
+    
+    for sub in subscriptions:
+        sub_due_date = sub.next_billing_date or sub.start_date or billing_day
+        if sub_due_date > billing_day:
+            continue
         
-        # Validate subscription is confirmed
-        if subscription.status != SubscriptionStatus.confirmed:
-            raise HTTPException(status_code=400, detail="Subscription must be confirmed before creating invoice")
+        # Check idempotency: avoid duplicate invoice on the same day for this subscription
+        existing_invoice = db.query(Invoice).filter(
+            Invoice.subscription_id == sub.id,
+            Invoice.date_issued == billing_day
+        ).first()
         
-        # Get customer info
-        customer = db.query(Customer).filter(Customer.id == subscription.customer_id).first()
-        if not customer:
-            raise HTTPException(status_code=404, detail="Customer not found")
+        if existing_invoice:
+            skipped_count += 1
+            continue
         
-        # Generate invoice number
-        last_invoice = db.query(Invoice).filter(
-            Invoice.number.isnot(None)
-        ).order_by(Invoice.number.desc()).first()
+        customer = db.query(Customer).filter(Customer.id == sub.customer_id).first()
+        customer_name = customer.name if customer else "Subscription Customer"
         
-        if last_invoice and last_invoice.number:
-            try:
-                last_number = int(last_invoice.number[3:])  # Remove 'INV' prefix
-                new_number = last_number + 1
-            except:
-                new_number = 1
-        else:
-            new_number = 1
-        
-        invoice_number = f"INV{new_number:04d}"
-        
-        # Create invoice
+        invoice_number = generate_invoice_number_helper(db)
         invoice = Invoice(
             number=invoice_number,
-            subscription_id=subscription.id,
-            customer_name=customer.name,
-            date_issued=date.today(),
-            due_date=date.today() + timedelta(days=30),  # Default 30 days
-            total_amount=subscription.recurring_amount or 0.0,
-            status=InvoiceStatus.draft
+            subscription_id=sub.id,
+            customer_name=customer_name,
+            date_issued=billing_day,
+            due_date=billing_day + timedelta(days=30),
+            total_amount=0.0,
+            status=InvoiceStatus.posted,
+            notes=f"Automated Billing Day Invoice for {sub.number or ('Sub #' + str(sub.id))}"
         )
-        
         db.add(invoice)
         db.flush()
         
-        # Copy subscription lines to invoice lines
-        subscription_lines = db.query(SubscriptionLine).filter(
-            SubscriptionLine.subscription_id == subscription.id
-        ).all()
+        sub_lines = db.query(SubscriptionLine).filter(SubscriptionLine.subscription_id == sub.id).all()
+        total_amount = 0.0
         
-        if not subscription_lines:
-            # If no subscription lines, create one from subscription data
-            invoice_line = InvoiceLine(
+        if not sub_lines:
+            price = sub.recurring_amount or 0.0
+            line = InvoiceLine(
                 invoice_id=invoice.id,
-                product_id=subscription.product_id,
-                variant_id=None,
+                product_id=sub.product_id,
                 quantity=1.0,
-                unit_price=subscription.recurring_amount or 0.0,
-                tax_id=None,
-                discount_id=None,
-                price_subtotal=subscription.recurring_amount or 0.0
+                unit_price=price,
+                price_subtotal=price
             )
-            db.add(invoice_line)
+            db.add(line)
+            total_amount = price
         else:
-            for sub_line in subscription_lines:
-                invoice_line = InvoiceLine(
+            for sline in sub_lines:
+                line = InvoiceLine(
                     invoice_id=invoice.id,
-                    product_id=sub_line.product_id,
-                    variant_id=sub_line.variant_id if hasattr(sub_line, 'variant_id') else None,
-                    quantity=sub_line.quantity,
-                    unit_price=sub_line.unit_price,
-                    tax_id=None,
-                    discount_id=None,
-                    price_subtotal=sub_line.subtotal
+                    product_id=sline.product_id,
+                    variant_id=getattr(sline, 'variant_id', None),
+                    description=getattr(sline, 'description', None),
+                    quantity=sline.quantity,
+                    unit_price=sline.unit_price,
+                    tax_rate=getattr(sline, 'tax_rate', 0.0),
+                    price_subtotal=sline.subtotal
                 )
-                db.add(invoice_line)
+                db.add(line)
+                total_amount += sline.subtotal
         
-        db.commit()
-        db.refresh(invoice)
+        invoice.total_amount = total_amount
         
-        return {
-            "id": invoice.id,
+        # Advance next billing date
+        plan = db.query(RecurringPlan).filter(RecurringPlan.id == sub.recurring_plan_id).first()
+        period = plan.billing_period.value if plan else "monthly"
+        sub.next_billing_date = advance_billing_date(sub_due_date, period)
+        sub.status = SubscriptionStatus.active
+        
+        # Handle auto-close
+        if plan and getattr(plan, 'auto_close', False) and sub.end_date and sub.end_date <= billing_day:
+            sub.status = SubscriptionStatus.closed
+            closed_count += 1
+            
+        invoices_created.append({
+            "invoice_id": invoice.id,
             "invoice_number": invoice.number,
-            "amount": invoice.total_amount,
-            "status": invoice.status.value,
-            "date_issued": invoice.date_issued.isoformat(),
-            "due_date": invoice.due_date.isoformat()
-        }
+            "subscription_id": sub.id,
+            "subscription_number": sub.number,
+            "customer_name": customer_name,
+            "amount": invoice.total_amount
+        })
     
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        print(f"Error creating invoice from subscription: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to create invoice: {str(e)}")
+    db.commit()
+    
+    return {
+        "success": True,
+        "message": f"Billing day run complete. {len(invoices_created)} invoices generated.",
+        "billing_date": billing_day.isoformat(),
+        "invoices_count": len(invoices_created),
+        "invoices_created": len(invoices_created),
+        "subscriptions_closed": closed_count,
+        "skipped_count": skipped_count,
+        "auto_closed_count": closed_count,
+        "invoices": invoices_created
+    }
+
+@router.post("/subscriptions/{subscription_id}/renew")
+def renew_subscription(
+    subscription_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Renew subscription for the next billing cycle"""
+    subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    plan = db.query(RecurringPlan).filter(RecurringPlan.id == subscription.recurring_plan_id).first()
+    if plan and not getattr(plan, 'can_renew', True):
+        raise HTTPException(status_code=400, detail="This recurring plan does not permit renewal")
+    
+    period = plan.billing_period.value if plan else "monthly"
+    base_date = subscription.next_billing_date or date.today()
+    new_billing_date = advance_billing_date(base_date, period)
+    
+    subscription.next_billing_date = new_billing_date
+    if subscription.end_date:
+        subscription.end_date = advance_billing_date(subscription.end_date, period)
+    subscription.status = SubscriptionStatus.active
+    
+    db.commit()
+    db.refresh(subscription)
+    
+    return {
+        "id": subscription.id,
+        "status": subscription.status.value,
+        "next_billing_date": subscription.next_billing_date.isoformat(),
+        "message": "Subscription renewed successfully"
+    }
+
+@router.post("/subscriptions/{subscription_id}/upsell")
+def upsell_subscription(
+    subscription_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create draft upsell order based on an existing subscription"""
+    subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    upsell_sub = Subscription(
+        customer_id=subscription.customer_id,
+        product_id=subscription.product_id,
+        recurring_plan_id=subscription.recurring_plan_id,
+        start_date=date.today(),
+        next_billing_date=subscription.next_billing_date,
+        end_date=subscription.end_date,
+        status=SubscriptionStatus.draft,
+        recurring_amount=subscription.recurring_amount,
+        created_at=datetime.utcnow()
+    )
+    db.add(upsell_sub)
+    db.flush()
+    
+    original_lines = db.query(SubscriptionLine).filter(
+        SubscriptionLine.subscription_id == subscription_id
+    ).all()
+    
+    for orig_line in original_lines:
+        new_line = SubscriptionLine(
+            subscription_id=upsell_sub.id,
+            product_id=orig_line.product_id,
+            variant_id=getattr(orig_line, 'variant_id', None),
+            description=getattr(orig_line, 'description', None),
+            quantity=orig_line.quantity,
+            unit_price=orig_line.unit_price,
+            discount=getattr(orig_line, 'discount', 0.0),
+            tax_rate=getattr(orig_line, 'tax_rate', 0.0),
+            subtotal=orig_line.subtotal
+        )
+        db.add(new_line)
+    
+    db.commit()
+    db.refresh(upsell_sub)
+    
+    return {
+        "id": upsell_sub.id,
+        "original_subscription_id": subscription.id,
+        "status": upsell_sub.status.value,
+        "message": "Upsell draft created successfully. Modify products or plans as needed."
+    }
 
 @router.delete("/subscriptions/{subscription_id}")
 def delete_subscription(
@@ -466,224 +663,4 @@ def delete_subscription(
     
     db.delete(subscription)
     db.commit()
-    
     return {"message": "Subscription deleted successfully"}
-
-@router.post("/subscriptions/{subscription_id}/renew")
-def renew_subscription(
-    subscription_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Renew subscription - Creates new subscription order with same order lines
-    Updates credit date and next invoice date
-    """
-    from datetime import timedelta
-    from dateutil.relativedelta import relativedelta
-    
-    try:
-        subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
-        if not subscription:
-            raise HTTPException(status_code=404, detail="Subscription not found")
-        
-        if subscription.status != SubscriptionStatus.confirmed:
-            raise HTTPException(status_code=400, detail="Only confirmed subscriptions can be renewed")
-        
-        # Get recurring plan to determine renewal period
-        plan = db.query(RecurringPlan).filter(RecurringPlan.id == subscription.recurring_plan_id).first()
-        if not plan:
-            raise HTTPException(status_code=404, detail="Recurring plan not found")
-        
-        # Calculate new dates based on plan
-        current_next_billing = subscription.next_billing_date or date.today()
-        current_end_date = subscription.end_date or current_next_billing
-        
-        if plan.billing_cycle == 'daily':
-            new_next_billing = current_next_billing + timedelta(days=plan.billing_interval)
-            new_end_date = current_end_date + timedelta(days=plan.billing_interval)
-        elif plan.billing_cycle == 'weekly':
-            new_next_billing = current_next_billing + timedelta(weeks=plan.billing_interval)
-            new_end_date = current_end_date + timedelta(weeks=plan.billing_interval)
-        elif plan.billing_cycle == 'monthly':
-            new_next_billing = current_next_billing + relativedelta(months=plan.billing_interval)
-            new_end_date = current_end_date + relativedelta(months=plan.billing_interval)
-        elif plan.billing_cycle == 'yearly':
-            new_next_billing = current_next_billing + relativedelta(years=plan.billing_interval)
-            new_end_date = current_end_date + relativedelta(years=plan.billing_interval)
-        else:
-            new_next_billing = current_next_billing + relativedelta(months=1)
-            new_end_date = current_end_date + relativedelta(months=1)
-        
-        # Create new subscription (renewal) with same order lines
-        new_subscription = Subscription(
-            customer_id=subscription.customer_id,
-            product_id=subscription.product_id,
-            recurring_plan_id=subscription.recurring_plan_id,
-            start_date=current_next_billing,
-            next_billing_date=new_next_billing,
-            end_date=new_end_date,
-            status=SubscriptionStatus.confirmed,
-            recurring_amount=subscription.recurring_amount,
-            created_at=datetime.utcnow()
-        )
-        
-        db.add(new_subscription)
-        db.flush()
-        
-        # Generate subscription number for new subscription
-        new_subscription.number = generate_subscription_number(db)
-        
-        # Copy subscription lines from original subscription
-        original_lines = db.query(SubscriptionLine).filter(
-            SubscriptionLine.subscription_id == subscription_id
-        ).all()
-        
-        for orig_line in original_lines:
-            new_line = SubscriptionLine(
-                subscription_id=new_subscription.id,
-                product_id=orig_line.product_id,
-                variant_id=orig_line.variant_id if hasattr(orig_line, 'variant_id') else None,
-                description=orig_line.description if hasattr(orig_line, 'description') else None,
-                quantity=orig_line.quantity,
-                unit_price=orig_line.unit_price,
-                discount=orig_line.discount if hasattr(orig_line, 'discount') else 0,
-                tax_rate=orig_line.tax_rate if hasattr(orig_line, 'tax_rate') else 0,
-                subtotal=orig_line.subtotal
-            )
-            db.add(new_line)
-        
-        # Update original subscription dates
-        subscription.next_billing_date = new_next_billing
-        subscription.end_date = new_end_date
-        
-        db.commit()
-        db.refresh(new_subscription)
-        
-        return {
-            "id": subscription.id,
-            "status": subscription.status.value,
-            "next_billing_date": subscription.next_billing_date.isoformat(),
-            "new_end_date": subscription.end_date.isoformat(),
-            "new_subscription_id": new_subscription.id,
-            "new_subscription_number": new_subscription.number,
-            "message": "Subscription renewed successfully"
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        print(f"Error renewing subscription: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to renew subscription: {str(e)}")
-
-@router.post("/subscriptions/{subscription_id}/upsell")
-def upsell_subscription(
-    subscription_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Upsell subscription - Creates new order to change or upgrade subscription
-    Allows adding different products or upgrading to higher tier
-    """
-    try:
-        subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
-        if not subscription:
-            raise HTTPException(status_code=404, detail="Subscription not found")
-        
-        if subscription.status != SubscriptionStatus.confirmed:
-            raise HTTPException(status_code=400, detail="Only confirmed subscriptions can be upgraded")
-        
-        # Get customer info
-        customer = db.query(Customer).filter(Customer.id == subscription.customer_id).first()
-        if not customer:
-            raise HTTPException(status_code=404, detail="Customer not found")
-        
-        # Create new subscription for upsell (starts as draft for customization)
-        upsell_subscription = Subscription(
-            customer_id=subscription.customer_id,
-            product_id=subscription.product_id,  # Can be changed in the form
-            recurring_plan_id=subscription.recurring_plan_id,  # Can be upgraded
-            start_date=date.today(),
-            next_billing_date=subscription.next_billing_date,
-            end_date=subscription.end_date,
-            status=SubscriptionStatus.draft,  # Draft so user can modify
-            recurring_amount=subscription.recurring_amount,
-            created_at=datetime.utcnow()
-        )
-        
-        db.add(upsell_subscription)
-        db.flush()
-        
-        # Copy existing subscription lines as starting point
-        original_lines = db.query(SubscriptionLine).filter(
-            SubscriptionLine.subscription_id == subscription_id
-        ).all()
-        
-        for orig_line in original_lines:
-            new_line = SubscriptionLine(
-                subscription_id=upsell_subscription.id,
-                product_id=orig_line.product_id,
-                variant_id=orig_line.variant_id if hasattr(orig_line, 'variant_id') else None,
-                description=orig_line.description if hasattr(orig_line, 'description') else None,
-                quantity=orig_line.quantity,
-                unit_price=orig_line.unit_price,
-                discount=orig_line.discount if hasattr(orig_line, 'discount') else 0,
-                tax_rate=orig_line.tax_rate if hasattr(orig_line, 'tax_rate') else 0,
-                subtotal=orig_line.subtotal
-            )
-            db.add(new_line)
-        
-        db.commit()
-        db.refresh(upsell_subscription)
-        
-        return {
-            "id": upsell_subscription.id,
-            "new_subscription_id": upsell_subscription.id,
-            "order_number": f"UPSELL-{subscription.number or subscription_id}",
-            "status": upsell_subscription.status.value,
-            "original_subscription_id": subscription.id,
-            "message": "Upsell order created successfully. You can now modify products and pricing."
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        print(f"Error creating upsell: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to create upsell: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to renew subscription: {str(e)}")
-    
-    # Get recurring plan to determine renewal period
-    plan = db.query(RecurringPlan).filter(RecurringPlan.id == subscription.recurring_plan_id).first()
-    if not plan:
-        raise HTTPException(status_code=404, detail="Recurring plan not found")
-    
-    # Calculate new dates based on plan
-    current_next_billing = subscription.next_billing_date or date.today()
-    
-    if plan.billing_cycle == 'daily':
-        new_next_billing = current_next_billing + timedelta(days=plan.billing_interval)
-    elif plan.billing_cycle == 'weekly':
-        new_next_billing = current_next_billing + timedelta(weeks=plan.billing_interval)
-    elif plan.billing_cycle == 'monthly':
-        new_next_billing = current_next_billing + relativedelta(months=plan.billing_interval)
-    elif plan.billing_cycle == 'yearly':
-        new_next_billing = current_next_billing + relativedelta(years=plan.billing_interval)
-    else:
-        new_next_billing = current_next_billing + relativedelta(months=1)  # Default to 1 month
-    
-    # Update subscription
-    subscription.next_billing_date = new_next_billing
-    
-    db.commit()
-    db.refresh(subscription)
-    
-    return {
-        "id": subscription.id,
-        "status": subscription.status.value,
-        "next_billing_date": subscription.next_billing_date.isoformat(),
-        "new_end_date": new_next_billing.isoformat(),
-        "message": "Subscription renewed successfully"
-    }

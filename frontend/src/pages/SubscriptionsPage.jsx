@@ -6,8 +6,11 @@ const SubscriptionsPage = () => {
   const navigate = useNavigate();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [billingLoading, setBillingLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedItems, setSelectedItems] = useState([]);
+  const [banner, setBanner] = useState(null);
 
   useEffect(() => {
     fetchSubscriptions();
@@ -24,6 +27,31 @@ const SubscriptionsPage = () => {
     }
   };
 
+  const handleRunBillingDay = async () => {
+    if (!window.confirm('Run Billing Day engine now?\n\nThis will automatically:\n1. Check all active/confirmed subscriptions with billing due today\n2. Generate posted invoices with calculated taxes & discount rules\n3. Advance next billing dates according to recurring plan frequency\n4. Auto-close expired subscriptions if plan dictates\n5. Prevent any double billing')) {
+      return;
+    }
+
+    try {
+      setBillingLoading(true);
+      const res = await axios.post('/subscriptions/run-billing-day');
+      const data = res.data;
+      setBanner({
+        type: 'success',
+        message: `Billing Day Complete: ${data.invoices_created} invoices generated, ${data.subscriptions_closed || 0} subscriptions auto-closed. ${data.skipped_invoices_existing || 0} already billed.`
+      });
+      fetchSubscriptions();
+      setTimeout(() => setBanner(null), 6000);
+    } catch (err) {
+      setBanner({
+        type: 'error',
+        message: 'Failed to run billing day: ' + (err.response?.data?.detail || err.message)
+      });
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const statusStyles = {
       draft: { bg: '#f3f4f6', color: '#6b7280', label: 'Draft' },
@@ -31,6 +59,7 @@ const SubscriptionsPage = () => {
       confirmed: { bg: '#d1fae5', color: '#065f46', label: 'Confirmed' },
       active: { bg: '#dcfce7', color: '#166534', label: 'Active' },
       paused: { bg: '#fef3c7', color: '#92400e', label: 'Paused' },
+      closed: { bg: '#f1f5f9', color: '#475569', label: 'Closed' },
       cancelled: { bg: '#fee2e2', color: '#991b1b', label: 'Cancelled' },
       churned: { bg: '#fecaca', color: '#7f1d1d', label: 'Churned' },
       expired: { bg: '#e5e7eb', color: '#374151', label: 'Expired' }
@@ -69,42 +98,86 @@ const SubscriptionsPage = () => {
     }
   };
 
-  const filteredSubscriptions = subscriptions.filter(sub =>
-    sub.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.customer_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Number', 'Customer', 'Plan', 'Next Billing Date', 'Recurring Amount', 'Status'];
+    const rows = filteredSubscriptions.map(s => [
+      s.id,
+      s.number || `S${String(s.id).padStart(4, '0')}`,
+      `"${s.customer_name || 'N/A'}"`,
+      s.plan_name || 'Standard',
+      s.next_billing_date || 'N/A',
+      s.recurring_amount || 0,
+      s.status
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `subscriptions_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const filteredSubscriptions = subscriptions.filter(sub => {
+    const matchesSearch =
+      sub.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || sub.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div style={{
-      padding: '2rem',
-      fontFamily: 'Quicksand, sans-serif'
-    }}>
+    <div style={{ padding: '2rem', fontFamily: 'Quicksand, sans-serif' }}>
       {/* Header */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '2rem'
+        marginBottom: '1.5rem',
+        flexWrap: 'wrap',
+        gap: '1rem'
       }}>
         <div>
           <h1 style={{
             fontFamily: 'Gabarito, sans-serif',
             fontSize: '2rem',
             color: '#18181b',
-            marginBottom: '0.5rem'
+            margin: '0 0 0.5rem 0'
           }}>
             Subscriptions
           </h1>
-          <p style={{ color: '#71717a', fontSize: '0.95rem' }}>
-            Manage customer subscriptions and recurring billing
+          <p style={{ color: '#71717a', fontSize: '0.95rem', margin: 0 }}>
+            Manage customer subscriptions, plan terms, and recurring billing cycles
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={handleRunBillingDay}
+            disabled={billingLoading}
+            style={{
+              padding: '0.75rem 1.25rem',
+              background: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: billingLoading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
+            }}
+          >
+            <span>⚡</span> {billingLoading ? 'Processing...' : 'Run Billing Day'}
+          </button>
+
           <button
             onClick={() => navigate('/admin/subscriptions/new')}
             style={{
-              padding: '0.75rem 1.5rem',
+              padding: '0.75rem 1.25rem',
               background: '#18181b',
               color: 'white',
               border: 'none',
@@ -113,15 +186,59 @@ const SubscriptionsPage = () => {
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.2s ease'
+              gap: '0.5rem'
             }}
-            onMouseEnter={(e) => e.target.style.background = '#27272a'}
-            onMouseLeave={(e) => e.target.style.background = '#18181b'}
           >
             <span>+</span> New Subscription
           </button>
         </div>
+      </div>
+
+      {banner && (
+        <div style={{
+          padding: '0.85rem 1.25rem',
+          borderRadius: '8px',
+          marginBottom: '1.5rem',
+          background: banner.type === 'success' ? '#dcfce7' : '#fee2e2',
+          color: banner.type === 'success' ? '#15803d' : '#b91c1c',
+          fontWeight: '600',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}>
+          <span>{banner.type === 'success' ? '✓' : '⚠️'}</span> {banner.message}
+        </div>
+      )}
+
+      {/* Status Filter Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+        {[
+          { key: 'all', label: 'All Subscriptions' },
+          { key: 'active', label: 'Active' },
+          { key: 'confirmed', label: 'Confirmed' },
+          { key: 'paused', label: 'Paused' },
+          { key: 'closed', label: 'Closed' },
+          { key: 'draft', label: 'Draft' }
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setStatusFilter(tab.key)}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '20px',
+              border: '1px solid',
+              borderColor: statusFilter === tab.key ? '#18181b' : '#e4e4e7',
+              background: statusFilter === tab.key ? '#18181b' : '#fff',
+              color: statusFilter === tab.key ? '#fff' : '#52525b',
+              fontSize: '0.85rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Toolbar */}
@@ -133,9 +250,11 @@ const SubscriptionsPage = () => {
         borderBottom: 'none',
         display: 'flex',
         gap: '1rem',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexWrap: 'wrap'
       }}>
         <button
+          onClick={handleExportCSV}
           style={{
             padding: '0.5rem 1rem',
             background: '#f9fafb',
@@ -146,9 +265,10 @@ const SubscriptionsPage = () => {
             fontWeight: '500'
           }}
         >
-          📋 Export
+          📋 Export CSV
         </button>
         <button
+          onClick={() => window.print()}
           style={{
             padding: '0.5rem 1rem',
             background: '#f9fafb',
@@ -164,14 +284,14 @@ const SubscriptionsPage = () => {
         <div style={{ flex: 1 }} />
         <input
           type="text"
-          placeholder="Search subscriptions..."
+          placeholder="Search number or customer..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
             padding: '0.5rem 1rem',
             border: '1px solid #e5e7eb',
             borderRadius: '6px',
-            width: '300px',
+            width: '280px',
             fontSize: '0.9rem'
           }}
         />
@@ -204,62 +324,26 @@ const SubscriptionsPage = () => {
                 <input
                   type="checkbox"
                   onChange={handleSelectAll}
-                  checked={selectedItems.length === subscriptions.length && subscriptions.length > 0}
+                  checked={selectedItems.length === filteredSubscriptions.length && filteredSubscriptions.length > 0}
                   style={{ cursor: 'pointer' }}
                 />
               </th>
-              <th style={{
-                padding: '1rem',
-                textAlign: 'left',
-                fontWeight: '600',
-                fontSize: '0.85rem',
-                color: '#6b7280'
-              }}>
+              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
                 Number
               </th>
-              <th style={{
-                padding: '1rem',
-                textAlign: 'left',
-                fontWeight: '600',
-                fontSize: '0.85rem',
-                color: '#6b7280'
-              }}>
+              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
                 Customer
               </th>
-              <th style={{
-                padding: '1rem',
-                textAlign: 'left',
-                fontWeight: '600',
-                fontSize: '0.85rem',
-                color: '#6b7280'
-              }}>
-                Next Invoice
+              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
+                Next Billing Date
               </th>
-              <th style={{
-                padding: '1rem',
-                textAlign: 'left',
-                fontWeight: '600',
-                fontSize: '0.85rem',
-                color: '#6b7280'
-              }}>
-                Recurring
+              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
+                Recurring Amount
               </th>
-              <th style={{
-                padding: '1rem',
-                textAlign: 'left',
-                fontWeight: '600',
-                fontSize: '0.85rem',
-                color: '#6b7280'
-              }}>
+              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
                 Plan
               </th>
-              <th style={{
-                padding: '1rem',
-                textAlign: 'left',
-                fontWeight: '600',
-                fontSize: '0.85rem',
-                color: '#6b7280'
-              }}>
+              <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.85rem', color: '#6b7280' }}>
                 Status
               </th>
             </tr>
@@ -280,7 +364,7 @@ const SubscriptionsPage = () => {
                       No subscriptions found
                     </div>
                     <div style={{ fontSize: '0.9rem' }}>
-                      Create your first subscription to get started
+                      No subscriptions match the selected criteria.
                     </div>
                   </div>
                 </td>
@@ -314,14 +398,14 @@ const SubscriptionsPage = () => {
                   </td>
                   <td style={{ padding: '1rem', color: '#18181b' }}>
                     {subscription.next_billing_date 
-                      ? new Date(subscription.next_billing_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      ? new Date(subscription.next_billing_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : 'N/A'}
                   </td>
                   <td style={{ padding: '1rem', color: '#18181b', fontWeight: '600' }}>
-                    ${subscription.recurring_amount?.toFixed(2) || '0.00'}
+                    ₹{(subscription.recurring_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td style={{ padding: '1rem', color: '#18181b' }}>
-                    {subscription.plan_name || 'Monthly'}
+                    {subscription.plan_name || 'Standard'}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {getStatusBadge(subscription.status)}

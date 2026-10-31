@@ -1,44 +1,48 @@
+import os
+import socket
+from urllib.parse import urlparse
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
-db_url = settings.DATABASE_URL
-connect_args = {}
+def get_sqlite_fallback_url() -> str:
+    # Anchor to the backend directory
+    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    sqlite_path = os.path.join(backend_dir, "subscription_db.sqlite").replace("\\", "/")
+    return f"sqlite:///{sqlite_path}"
 
-import socket
-from urllib.parse import urlparse
-
-if db_url.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
-    engine = create_engine(db_url, connect_args=connect_args)
-else:
-    postgres_available = False
-    try:
-        parsed = urlparse(db_url)
-        host = parsed.hostname or "localhost"
-        port = parsed.port or 5432
-        with socket.create_connection((host, port), timeout=1.0):
-            postgres_available = True
-    except Exception as e:
-        print(f"⚠️ PostgreSQL host unreachable ({e}). Falling back to SQLite.")
-
-    if postgres_available:
+def init_engine():
+    db_url = settings.DATABASE_URL
+    if db_url.startswith("postgresql"):
+        postgres_available = False
         try:
-            temp_engine = create_engine(db_url, connect_args={"connect_timeout": 2})
-            with temp_engine.connect() as conn:
-                pass
-            engine = temp_engine
-        except Exception as e:
-            print(f"⚠️ PostgreSQL connection failed ({e}). Falling back to SQLite.")
-            db_url = "sqlite:///./subscription_db.sqlite"
-            connect_args = {"check_same_thread": False}
-            engine = create_engine(db_url, connect_args=connect_args)
-    else:
-        db_url = "sqlite:///./subscription_db.sqlite"
-        connect_args = {"check_same_thread": False}
-        engine = create_engine(db_url, connect_args=connect_args)
+            parsed = urlparse(db_url)
+            host = parsed.hostname or "localhost"
+            port = parsed.port or 5432
+            with socket.create_connection((host, port), timeout=1.0):
+                postgres_available = True
+        except Exception:
+            pass
 
+        if postgres_available:
+            try:
+                pg_engine = create_engine(db_url, connect_args={"connect_timeout": 3}, echo=False)
+                with pg_engine.connect() as conn:
+                    pass
+                print(f"Connected to PostgreSQL database: {db_url.split('@')[-1] if '@' in db_url else db_url}")
+                return pg_engine
+            except Exception as e:
+                print(f"Warning: PostgreSQL connection failed ({e}). Falling back to SQLite.")
+
+        fallback_url = get_sqlite_fallback_url()
+        print(f"Using local SQLite database at {fallback_url}")
+        return create_engine(fallback_url, echo=False, connect_args={"check_same_thread": False})
+    elif db_url.startswith("sqlite"):
+        return create_engine(db_url, echo=False, connect_args={"check_same_thread": False})
+    return create_engine(db_url, echo=False)
+
+engine = init_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

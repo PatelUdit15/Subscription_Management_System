@@ -258,7 +258,7 @@ function QuotationFormPage() {
       
       const response = await axiosInstance.post('/quotations', payload)
       showToast('Quotation created successfully!')
-      setTimeout(() => navigate(`/quotations/${response.data.id}`), 1000)
+      setTimeout(() => navigate(`/admin/quotations/${response.data.id}`), 1000)
     } catch (error) {
       showToast(error.response?.data?.detail || 'Failed to create quotation', 'error')
     } finally {
@@ -278,7 +278,7 @@ function QuotationFormPage() {
 
       <div className="page-header">
         <div>
-          <button className="btn-back" onClick={() => navigate('/quotations')}>
+          <button className="btn-back" onClick={() => navigate('/admin/quotations')}>
             ← Back to Quotations
           </button>
           <h1 className="page-title">New Quotation</h1>
@@ -507,7 +507,7 @@ function QuotationFormPage() {
 
           {/* Form Actions */}
           <div className="form-actions">
-            <button type="button" className="btn-secondary" onClick={() => navigate('/quotations')}>
+            <button type="button" className="btn-secondary" onClick={() => navigate('/admin/quotations')}>
               Cancel
             </button>
             <button type="submit" className="btn-primary" disabled={loading}>

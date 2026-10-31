@@ -224,7 +224,7 @@ function QuotationTemplatesPage() {
                     <div className="action-buttons">
                       <button 
                         className="btn-icon btn-edit" 
-                        onClick={() => navigate(`/quotation-templates/${template.id}`)}
+                        onClick={() => navigate(`/admin/config/templates/${template.id}`)}
                         title="View Details"
                       >
                         👁️

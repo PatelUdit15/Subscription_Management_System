@@ -471,6 +471,49 @@ const SubscriptionFormPage = () => {
     }
   };
 
+
+  const handlePause = async () => {
+    if (!window.confirm('Pause this subscription? Automated billing will be paused.')) return;
+    try {
+      setLoading(true);
+      await axios.post(/subscriptions//pause);
+      alert('✓ Subscription paused successfully.');
+      fetchSubscription();
+    } catch (err) {
+      alert('Failed to pause: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResume = async () => {
+    if (!window.confirm('Resume this subscription? Automated billing will resume.')) return;
+    try {
+      setLoading(true);
+      await axios.post(/subscriptions//resume);
+      alert('✓ Subscription resumed successfully.');
+      fetchSubscription();
+    } catch (err) {
+      alert('Failed to resume: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = async () => {
+    if (!window.confirm('Close this subscription early? No further invoices will be generated.')) return;
+    try {
+      setLoading(true);
+      await axios.post(/subscriptions//close);
+      alert('✓ Subscription closed successfully.');
+      fetchSubscription();
+    } catch (err) {
+      alert('Failed to close: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     calculateTotal();
   }, [orderLines]);
@@ -713,7 +756,7 @@ const SubscriptionFormPage = () => {
               </>
             )}
 
-            {formData.status === 'confirmed' && (
+            {(formData.status === 'confirmed' || formData.status === 'active') && (
               <>
                 <button
                   onClick={handleCreateInvoice}
@@ -729,6 +772,36 @@ const SubscriptionFormPage = () => {
                   }}
                 >
                   Create Invoice
+                </button>
+                <button
+                  onClick={handlePause}
+                  style={{
+                    padding: '0.6rem 1.25rem',
+                    background: '#d97706',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  Pause
+                </button>
+                <button
+                  onClick={handleClose}
+                  style={{
+                    padding: '0.6rem 1.25rem',
+                    background: '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  Close Early
                 </button>
                 <button
                   onClick={handleRenew}
@@ -761,6 +834,54 @@ const SubscriptionFormPage = () => {
                   Upsell
                 </button>
               </>
+            )}
+
+            {formData.status === 'paused' && (
+              <>
+                <button
+                  onClick={handleResume}
+                  style={{
+                    padding: '0.6rem 1.25rem',
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  Resume
+                </button>
+                <button
+                  onClick={handleClose}
+                  style={{
+                    padding: '0.6rem 1.25rem',
+                    background: '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  Close Early
+                </button>
+              </>
+            )}
+
+            {formData.status === 'closed' && (
+              <span style={{
+                padding: '0.6rem 1.25rem',
+                background: '#f1f5f9',
+                color: '#475569',
+                borderRadius: '6px',
+                fontWeight: '600',
+                fontSize: '0.9rem'
+              }}>
+                Subscription is Closed
+              </span>
             )}
           </div>
 

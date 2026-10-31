@@ -11,6 +11,7 @@ class SubscriptionStatus(str, enum.Enum):
     active = "active"
     paused = "paused"
     cancelled = "cancelled"
+    closed = "closed"
     expired = "expired"
     churned = "churned"
 
