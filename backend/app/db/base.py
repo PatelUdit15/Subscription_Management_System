@@ -18,6 +18,7 @@ def init_engine():
     db_url = settings.DATABASE_URL
     if db_url.startswith("postgresql"):
         postgres_available = False
+        parsed = None
         try:
             parsed = urlparse(db_url)
             host = parsed.hostname or "localhost"
@@ -26,6 +27,20 @@ def init_engine():
                 postgres_available = True
         except Exception:
             pass
+
+        # If configured remote host failed, try localhost fallback for PostgreSQL
+        if not postgres_available and parsed and parsed.hostname not in ("localhost", "127.0.0.1"):
+            try:
+                local_port = parsed.port or 5432
+                with socket.create_connection(("localhost", local_port), timeout=1.0):
+                    local_url = db_url.replace(f"@{parsed.hostname}:", "@localhost:")
+                    pg_engine = create_engine(local_url, connect_args={"connect_timeout": 3}, echo=False)
+                    with pg_engine.connect() as conn:
+                        pass
+                    print(f"[INFO] Connected to local PostgreSQL database at localhost:{local_port}")
+                    return pg_engine
+            except Exception as e:
+                logger.warning(f"Local PostgreSQL fallback attempt failed: {e}")
 
         if postgres_available:
             try:

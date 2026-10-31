@@ -1,5 +1,8 @@
+import os
 from pydantic_settings import BaseSettings
 from typing import Optional
+
+_backend_env = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env")
 
 class Settings(BaseSettings):
     # Use SQLite as fallback if PostgreSQL is not configured
@@ -19,7 +22,7 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     
     class Config:
-        env_file = ".env"
+        env_file = (_backend_env, ".env")
         case_sensitive = True
 
 settings = Settings()

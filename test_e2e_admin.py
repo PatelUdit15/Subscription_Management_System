@@ -235,28 +235,37 @@ def run_tests():
         try:
             if 'payment' in locals() and payment and payment.id:
                 db.delete(payment)
+                db.flush()
             if 'invoice' in locals() and invoice and invoice.id:
-                for line in (invoice.invoice_lines or []):
+                for line in (getattr(invoice, 'invoice_lines', None) or getattr(invoice, 'lines', None) or []):
                     db.delete(line)
                 db.delete(invoice)
+                db.flush()
             if 'sub' in locals() and sub and sub.id:
-                for line in (sub.subscription_lines or []):
+                for line in (getattr(sub, 'subscription_lines', None) or getattr(sub, 'lines', None) or []):
                     db.delete(line)
                 db.delete(sub)
+                db.flush()
             if 'quot' in locals() and quot and quot.id:
-                for line in (quot.quotation_lines or []):
+                for line in (getattr(quot, 'quotation_lines', None) or getattr(quot, 'lines', None) or []):
                     db.delete(line)
                 db.delete(quot)
-            if 'plan' in locals() and plan and plan.id:
-                db.delete(plan)
+                db.flush()
             if 'variant' in locals() and variant and variant.id:
                 db.delete(variant)
+                db.flush()
             if 'product' in locals() and product and product.id:
                 db.delete(product)
+                db.flush()
+            if 'plan' in locals() and plan and plan.id:
+                db.delete(plan)
+                db.flush()
             if 'discount' in locals() and discount and discount.id:
                 db.delete(discount)
+                db.flush()
             db.commit()
-        except Exception:
+        except Exception as ce:
+            print(f"  [CLEANUP NOTE] {ce}")
             db.rollback()
         finally:
             db.close()

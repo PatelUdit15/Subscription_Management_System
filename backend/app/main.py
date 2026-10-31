@@ -14,10 +14,18 @@ from app.api.routes import (
 )
 
 # Create tables
-def sync_sqlite_columns():
-    """Ensure any newly added model columns exist in existing SQLite databases without dropping tables."""
+def sync_db_schema():
+    """Ensure schema sync across SQLite and PostgreSQL."""
     try:
         from sqlalchemy import inspect, text
+        if engine.dialect.name == "postgresql":
+            with engine.connect() as conn:
+                for val in ['monthly', 'weekly', 'daily', 'yearly']:
+                    try:
+                        conn.execute(text(f"ALTER TYPE billingperiod ADD VALUE IF NOT EXISTS '{val}'"))
+                        conn.commit()
+                    except Exception:
+                        pass
         with engine.connect() as conn:
             inspector = inspect(engine)
             # Check recurring_plans
@@ -52,7 +60,7 @@ def sync_sqlite_columns():
 
 # Create tables and sync columns
 Base.metadata.create_all(bind=engine)
-sync_sqlite_columns()
+sync_db_schema()
 
 app = FastAPI(title="SubscriptionFlow Pro API - Brightloop Software")
 
@@ -78,7 +86,7 @@ app.add_middleware(
 # Seed database on startup
 @app.on_event("startup")
 def seed_database():
-    sync_sqlite_columns()
+    sync_db_schema()
     db = SessionLocal()
     try:
         # Check if admin user exists
