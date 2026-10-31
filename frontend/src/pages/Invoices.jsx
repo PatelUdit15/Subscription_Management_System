@@ -5,7 +5,21 @@ import '../pages/TaxesPage.css';
 const Invoices = () => {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
+
+  // Quick Payment Modal
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [paymentData, setPaymentData] = useState({
+    amount: '',
+    payment_method: 'bank_transfer',
+    transaction_reference: '',
+    payment_date: new Date().toISOString().split('T')[0],
+    notes: ''
+  });
 
   useEffect(() => {
     fetchInvoices();
@@ -22,18 +36,69 @@ const Invoices = () => {
     }
   };
 
-  const showToast = (message, type) => {
+  const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
   };
 
-  const handleMarkAsPaid = async (invoiceId) => {
+  const handleRunBillingDay = async () => {
+    if (!window.confirm('Run Billing Day engine?\n\nThis will scan active subscriptions due today and automatically create posted invoices with taxes and discounts applied.')) {
+      return;
+    }
+
     try {
-      await axios.patch(`/invoices/${invoiceId}/status`, { status: 'paid' });
-      showToast('Invoice marked as paid', 'success');
+      setBillingLoading(true);
+      const res = await axios.post('/subscriptions/run-billing-day');
+      const data = res.data;
+      showToast(`Billing Day processed: ${data.invoices_created} invoices generated.`);
       fetchInvoices();
-    } catch (error) {
-      showToast('Failed to update invoice status', 'error');
+    } catch (err) {
+      showToast('Billing day failed: ' + (err.response?.data?.detail || err.message), 'error');
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const handleConfirmInvoice = async (invoiceId) => {
+    try {
+      await axios.post(`/invoices/${invoiceId}/confirm`);
+      showToast('Invoice confirmed and posted with assigned invoice number.');
+      fetchInvoices();
+    } catch (err) {
+      showToast('Failed to confirm invoice: ' + (err.response?.data?.detail || err.message), 'error');
+    }
+  };
+
+  const handleOpenPayment = (invoice) => {
+    setSelectedInvoice(invoice);
+    setPaymentData({
+      amount: invoice.total_amount.toString(),
+      payment_method: 'bank_transfer',
+      transaction_reference: '',
+      payment_date: new Date().toISOString().split('T')[0],
+      notes: `Payment for ${invoice.number || 'Invoice'}`
+    });
+    setShowPaymentModal(true);
+  };
+
+  const handleRegisterPayment = async (e) => {
+    e.preventDefault();
+    if (!selectedInvoice) return;
+
+    try {
+      await axios.post('/payments', {
+        invoice_id: selectedInvoice.id,
+        amount: parseFloat(paymentData.amount) || 0,
+        payment_method: paymentData.payment_method,
+        transaction_reference: paymentData.transaction_reference,
+        payment_date: paymentData.payment_date,
+        notes: paymentData.notes
+      });
+      showToast(`Payment of ₹${paymentData.amount} recorded successfully.`);
+      setShowPaymentModal(false);
+      fetchInvoices();
+    } catch (err) {
+      showToast('Failed to record payment: ' + (err.response?.data?.detail || err.message), 'error');
     }
   };
 
@@ -42,28 +107,58 @@ const Invoices = () => {
     
     try {
       await axios.delete(`/invoices/${invoiceId}`);
-      showToast('Invoice deleted successfully', 'success');
+      showToast('Invoice deleted successfully');
       fetchInvoices();
     } catch (error) {
       showToast('Failed to delete invoice', 'error');
     }
   };
 
-  const getStatusBadge = (status) => {
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const getStatusBadge = (invoice) => {
+    const isOverdue = invoice.due_date < todayStr && invoice.status !== 'paid' && invoice.status !== 'cancelled';
+    
+    if (isOverdue) {
+      return (
+        <span style={{
+          background: '#fee2e2',
+          color: '#991b1b',
+          padding: '0.25rem 0.65rem',
+          borderRadius: '12px',
+          fontSize: '0.8rem',
+          fontWeight: '700'
+        }}>
+          ⚠️ OVERDUE
+        </span>
+      );
+    }
+
     const statusColors = {
-      draft: 'badge-blue',
-      posted: 'badge-yellow',
-      paid: 'badge-green',
-      cancelled: 'badge-red'
+      draft: { bg: '#e0f2fe', color: '#0369a1' },
+      posted: { bg: '#fef3c7', color: '#92400e' },
+      paid: { bg: '#dcfce7', color: '#166534' },
+      cancelled: { bg: '#f3f4f6', color: '#6b7280' }
     };
+    const s = statusColors[invoice.status] || { bg: '#f3f4f6', color: '#6b7280' };
+
     return (
-      <span className={`badge ${statusColors[status] || 'badge-gray'}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <span style={{
+        background: s.bg,
+        color: s.color,
+        padding: '0.25rem 0.65rem',
+        borderRadius: '12px',
+        fontSize: '0.8rem',
+        fontWeight: '600',
+        textTransform: 'capitalize'
+      }}>
+        {invoice.status}
       </span>
     );
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -71,44 +166,129 @@ const Invoices = () => {
     });
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  const filteredInvoices = invoices.filter(inv => {
+    const isOverdue = inv.due_date < todayStr && inv.status !== 'paid' && inv.status !== 'cancelled';
+    
+    const matchesFilter =
+      statusFilter === 'all' ||
+      (statusFilter === 'overdue' && isOverdue) ||
+      (statusFilter !== 'overdue' && inv.status === statusFilter);
+
+    const matchesSearch =
+      (inv.number && inv.number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (inv.customer_name && inv.customer_name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    return matchesFilter && matchesSearch;
+  });
+
+  const overdueCount = invoices.filter(inv => inv.due_date < todayStr && inv.status !== 'paid' && inv.status !== 'cancelled').length;
 
   if (loading) {
-    return <div className="page-container">Loading...</div>;
+    return <div className="page-container">Loading invoices...</div>;
   }
 
   return (
-    <div className="page-container">
+    <div className="page-container" style={{ fontFamily: 'Quicksand, sans-serif' }}>
       {toast.show && (
         <div className={`toast toast-${toast.type}`}>
           {toast.message}
         </div>
       )}
 
-      <div className="page-header">
-        <h1 className="page-title">Invoices</h1>
-        <button
-          onClick={() => window.location.href = '/admin/invoices/new'}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: '#0A4174',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            fontWeight: '600'
-          }}
-        >
-          + Create Invoice
-        </button>
+      {/* Header */}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 className="page-title">Invoices</h1>
+          <p style={{ color: '#71717a', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
+            Automated billing lifecycle: Draft → Confirmed/Posted → Paid. Real-time tax & discount calculation.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={handleRunBillingDay}
+            disabled={billingLoading}
+            style={{
+              padding: '0.75rem 1.25rem',
+              background: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: billingLoading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <span>⚡</span> {billingLoading ? 'Processing...' : 'Run Billing Day'}
+          </button>
+
+          <button
+            onClick={() => window.location.href = '/admin/invoices/new'}
+            style={{
+              padding: '0.75rem 1.25rem',
+              background: '#18181b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            + Create Invoice
+          </button>
+        </div>
       </div>
 
+      {/* Filter Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+        {[
+          { key: 'all', label: `All (${invoices.length})` },
+          { key: 'overdue', label: `⚠️ Overdue (${overdueCount})`, isAlert: overdueCount > 0 },
+          { key: 'posted', label: 'Posted / Awaiting Payment' },
+          { key: 'draft', label: 'Draft' },
+          { key: 'paid', label: 'Paid' }
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setStatusFilter(tab.key)}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '20px',
+              border: '1px solid',
+              borderColor: tab.isAlert && statusFilter !== 'overdue' ? '#f87171' : statusFilter === tab.key ? '#18181b' : '#e4e4e7',
+              background: statusFilter === tab.key ? '#18181b' : tab.isAlert ? '#fef2f2' : '#fff',
+              color: statusFilter === tab.key ? '#fff' : tab.isAlert ? '#b91c1c' : '#52525b',
+              fontSize: '0.85rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Search Bar */}
+      <div style={{ marginBottom: '1rem' }}>
+        <input
+          type="text"
+          placeholder="Search by invoice number or customer name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            padding: '0.6rem 1rem',
+            border: '1px solid #e4e4e7',
+            borderRadius: '8px',
+            width: '320px',
+            fontSize: '0.9rem'
+          }}
+        />
+      </div>
+
+      {/* Invoices Table */}
       <div className="table-container">
         <table className="data-table">
           <thead>
@@ -117,42 +297,87 @@ const Invoices = () => {
               <th>Customer</th>
               <th>Date Issued</th>
               <th>Due Date</th>
-              <th>Total</th>
+              <th>Total Amount</th>
               <th>Status</th>
-              <th>Actions</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {invoices.length === 0 ? (
+            {filteredInvoices.length === 0 ? (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>
-                  No invoices found
+                <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: '#71717a' }}>
+                  No invoices found matching criteria.
                 </td>
               </tr>
             ) : (
-              invoices.map((invoice) => (
+              filteredInvoices.map((invoice) => (
                 <tr key={invoice.id}>
-                  <td>{invoice.number}</td>
+                  <td style={{ fontWeight: '600' }}>
+                    {invoice.number || `INV-Draft-${invoice.id}`}
+                  </td>
                   <td>{invoice.customer_name}</td>
                   <td>{formatDate(invoice.date_issued)}</td>
                   <td>{formatDate(invoice.due_date)}</td>
-                  <td>{formatCurrency(invoice.total_amount)}</td>
-                  <td>{getStatusBadge(invoice.status)}</td>
-                  <td>
-                    <div className="action-buttons">
-                      {invoice.status === 'posted' && (
+                  <td style={{ fontWeight: '600' }}>₹{parseFloat(invoice.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td>{getStatusBadge(invoice)}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div className="action-buttons" style={{ justifyContent: 'flex-end' }}>
+                      {invoice.status === 'draft' && (
                         <button
-                          onClick={() => handleMarkAsPaid(invoice.id)}
-                          className="btn-action btn-success"
-                          title="Mark as Paid"
+                          onClick={() => handleConfirmInvoice(invoice.id)}
+                          style={{
+                            background: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer'
+                          }}
+                          title="Confirm & Post Invoice"
                         >
-                          ✓ Paid
+                          Confirm
                         </button>
                       )}
+
+                      {invoice.status === 'posted' && (
+                        <button
+                          onClick={() => handleOpenPayment(invoice)}
+                          style={{
+                            background: '#18181b',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer'
+                          }}
+                          title="Record Payment"
+                        >
+                          + Pay
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => window.print()}
+                        style={{
+                          background: '#f4f4f5',
+                          border: 'none',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: '6px',
+                          cursor: 'pointer'
+                        }}
+                        title="Print Invoice"
+                      >
+                        🖨️
+                      </button>
+
                       <button
                         onClick={() => handleDelete(invoice.id)}
                         className="btn-action btn-danger"
-                        title="Delete"
+                        title="Delete Invoice"
                       >
                         🗑
                       </button>
@@ -164,6 +389,94 @@ const Invoices = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Record Payment Modal */}
+      {showPaymentModal && selectedInvoice && (
+        <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h2>Record Payment for {selectedInvoice.number || `Invoice #${selectedInvoice.id}`}</h2>
+              <button className="modal-close" onClick={() => setShowPaymentModal(false)}>✕</button>
+            </div>
+
+            <form onSubmit={handleRegisterPayment}>
+              <div style={{ marginBottom: '1rem', background: '#f4f4f5', padding: '0.75rem', borderRadius: '6px' }}>
+                <div style={{ fontSize: '0.85rem', color: '#52525b' }}>Customer: <strong>{selectedInvoice.customer_name}</strong></div>
+                <div style={{ fontSize: '0.85rem', color: '#52525b', marginTop: '0.25rem' }}>Invoice Total: <strong>₹{selectedInvoice.total_amount}</strong></div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Amount (₹) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={paymentData.amount}
+                  onChange={e => setPaymentData({ ...paymentData, amount: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Payment Method *</label>
+                <select
+                  value={paymentData.payment_method}
+                  onChange={e => setPaymentData({ ...paymentData, payment_method: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                >
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="credit_card">Credit Card</option>
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI / Instant Transfer</option>
+                  <option value="stripe">Stripe</option>
+                  <option value="paypal">PayPal</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Payment Date *</label>
+                <input
+                  type="date"
+                  required
+                  value={paymentData.payment_date}
+                  onChange={e => setPaymentData({ ...paymentData, payment_date: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Transaction Reference</label>
+                <input
+                  type="text"
+                  placeholder="e.g. TXN-894827 or Bank Cheque No"
+                  value={paymentData.transaction_reference}
+                  onChange={e => setPaymentData({ ...paymentData, transaction_reference: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label>Notes</label>
+                <textarea
+                  rows="2"
+                  value={paymentData.notes}
+                  onChange={e => setPaymentData({ ...paymentData, notes: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowPaymentModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" style={{ background: '#18181b', color: '#fff' }}>
+                  Record Payment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

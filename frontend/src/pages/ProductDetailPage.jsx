@@ -49,7 +49,7 @@ function ProductDetailPage() {
       })
     } catch (error) {
       showToast('Failed to load product', 'error')
-      navigate('/products')
+      navigate('/admin/products')
     } finally {
       setLoading(false)
     }
@@ -176,7 +176,7 @@ function ProductDetailPage() {
 
       <div className="page-header">
         <div>
-          <button className="btn-back" onClick={() => navigate('/products')}>
+          <button className="btn-back" onClick={() => navigate('/admin/products')}>
             ← Back to Products
           </button>
           <h1 className="page-title">{product.name}</h1>
