@@ -82,7 +82,7 @@ function QuotationsPage() {
           <h1 className="page-title">Sales Quotations</h1>
           <p className="page-subtitle">Create and manage customer quotations</p>
         </div>
-        <button className="btn-primary" onClick={() => navigate('/quotations/new')}>
+        <button className="btn-primary" onClick={() => navigate('/admin/quotations/new')}>
           + New Quotation
         </button>
       </div>
@@ -131,7 +131,7 @@ function QuotationsPage() {
                     <div className="action-buttons">
                       <button 
                         className="btn-icon btn-edit" 
-                        onClick={() => navigate(`/quotations/${quot.id}`)}
+                        onClick={() => navigate(`/admin/quotations/${quot.id}`)}
                         title="View Details"
                       >
                         👁️

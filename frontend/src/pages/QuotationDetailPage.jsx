@@ -20,7 +20,7 @@ function QuotationDetailPage() {
       setQuotation(response.data)
     } catch (error) {
       showToast('Failed to load quotation', 'error')
-      navigate('/quotations')
+      navigate('/admin/quotations')
     } finally {
       setLoading(false)
     }
@@ -78,7 +78,7 @@ function QuotationDetailPage() {
 
       <div className="page-header">
         <div>
-          <button className="btn-back" onClick={() => navigate('/quotations')}>
+          <button className="btn-back" onClick={() => navigate('/admin/quotations')}>
             ← Back to Quotations
           </button>
           <h1 className="page-title">{quotation.number}</h1>

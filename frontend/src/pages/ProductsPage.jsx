@@ -66,7 +66,7 @@ function ProductsPage() {
       closeModal()
       
       // Navigate to product detail page
-      navigate(`/products/${response.data.id}`)
+      navigate(`/admin/products/${response.data.id}`)
     } catch (error) {
       showToast(error.response?.data?.detail || 'Failed to create product', 'error')
     }
@@ -207,7 +207,7 @@ function ProductsPage() {
                       <div className="action-buttons">
                         <button 
                           className="btn-icon btn-edit" 
-                          onClick={() => navigate(`/products/${product.id}`)}
+                          onClick={() => navigate(`/admin/products/${product.id}`)}
                           title="View/Edit"
                         >
                           👁️
@@ -255,7 +255,7 @@ function ProductsPage() {
               return (
                 <div
                   key={product.id}
-                  onClick={() => navigate(`/products/${product.id}`)}
+                  onClick={() => navigate(`/admin/products/${product.id}`)}
                   style={{
                     background: 'white',
                     borderRadius: '12px',

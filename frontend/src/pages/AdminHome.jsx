@@ -20,6 +20,7 @@ import Invoices from './Invoices'
 import InvoiceFormPage from './InvoiceFormPage'
 import Customers from './Customers'
 import CustomerDetail from './CustomerDetail'
+import Users from './Users'
 import PaymentsPage from './PaymentsPage'
 import ReportsPage from './ReportsPage'
 import Breadcrumbs from '../components/Breadcrumbs'
@@ -111,7 +112,6 @@ const moduleContent = {
   }
 }
 
-
 function AdminHome() {
   const navigate = useNavigate()
   const { currentUser, loading, logout } = useAuth()
@@ -172,7 +172,7 @@ function AdminHome() {
       'Discounts': '/admin/config/discounts',
       'Taxes': '/admin/config/taxes',
       'Attributes': '/admin/config/attributes',
-      'Users/Contacts': '/admin/customers',
+      'Users/Contacts': '/admin/users',
       'Reports': '/admin/reports',
       'Settings': '/admin/settings'
     }
@@ -284,6 +284,9 @@ function AdminHome() {
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
             
+            {/* Users & Staff */}
+            <Route path="/users" element={<Users />} />
+
             {/* Customers */}
             <Route path="/customers" element={<Customers />} />
             <Route path="/customers/:id" element={<CustomerDetail />} />
@@ -293,11 +296,6 @@ function AdminHome() {
             <Route path="/subscriptions/new" element={<SubscriptionFormPage />} />
             <Route path="/subscriptions/:id" element={<SubscriptionFormPage />} />
             
-            {/* Invoices */}
-            <Route path="/invoices" element={<Invoices />} />
-            <Route path="/invoices/new" element={<InvoiceFormPage />} />
-            <Route path="/invoices/:id" element={<InvoiceFormPage />} />
-            
             {/* Quotations */}
             <Route path="/quotations" element={<QuotationsPage />} />
             <Route path="/quotations/new" element={<QuotationFormPage />} />
@@ -305,6 +303,8 @@ function AdminHome() {
             
             {/* Invoices */}
             <Route path="/invoices" element={<Invoices />} />
+            <Route path="/invoices/new" element={<InvoiceFormPage />} />
+            <Route path="/invoices/:id" element={<InvoiceFormPage />} />
             
             {/* Payments */}
             <Route path="/payments" element={<PaymentsPage />} />

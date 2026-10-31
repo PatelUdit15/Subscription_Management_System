@@ -20,7 +20,7 @@ function QuotationTemplateDetailPage() {
       setTemplate(response.data)
     } catch (error) {
       showToast('Failed to load template', 'error')
-      navigate('/quotation-templates')
+      navigate('/admin/config/templates')
     } finally {
       setLoading(false)
     }
@@ -45,7 +45,7 @@ function QuotationTemplateDetailPage() {
 
       <div className="page-header">
         <div>
-          <button className="btn-back" onClick={() => navigate('/quotation-templates')}>
+          <button className="btn-back" onClick={() => navigate('/admin/config/templates')}>
             ← Back to Templates
           </button>
           <h1 className="page-title">{template.name}</h1>
