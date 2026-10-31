@@ -286,3 +286,35 @@ def cancel_my_subscription(
         "success": True,
         "message": "Subscription cancelled successfully"
     }
+
+class CustomerStripePayRequest(BaseModel):
+    amount: float
+    cardholder_name: Optional[str] = None
+    card_last4: Optional[str] = "4242"
+    card_brand: Optional[str] = "Visa"
+    notes: Optional[str] = None
+
+@router.post("/my/invoices/{invoice_id}/pay-stripe")
+def pay_my_invoice_with_stripe(
+    invoice_id: int,
+    payload: CustomerStripePayRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Allow portal customer to settle their invoice directly with Stripe"""
+    from app.services.stripe_service import stripe_service
+    
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    result = stripe_service.settle_invoice(
+        db=db,
+        invoice_id=invoice.id,
+        amount=payload.amount,
+        notes=payload.notes or f"Customer Portal Stripe Payment ({payload.card_brand} •••• {payload.card_last4})",
+        cardholder_name=payload.cardholder_name or current_user.name,
+        card_last4=payload.card_last4 or "4242",
+        card_brand=payload.card_brand or "Visa"
+    )
+    return result

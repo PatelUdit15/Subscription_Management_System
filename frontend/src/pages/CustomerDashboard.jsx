@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import StripePaymentModal from '../components/StripePaymentModal';
 
 const CustomerDashboard = () => {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ const CustomerDashboard = () => {
   
   // Invoices state
   const [invoices, setInvoices] = useState([]);
+  const [stripeInvoice, setStripeInvoice] = useState(null);
 
   useEffect(() => {
     setActiveTab(getTabFromPath());
@@ -181,66 +183,84 @@ const CustomerDashboard = () => {
           color: '#18181b',
           marginBottom: '0.5rem'
         }}>
-          My Account
+          {activeTab === 'profile'
+            ? 'Profile Settings'
+            : activeTab === 'subscriptions'
+            ? 'My Subscriptions'
+            : 'My Orders'}
         </h1>
         <p style={{ color: '#71717a', fontSize: '0.95rem' }}>
-          Manage your profile, orders, subscriptions, and invoices
+          {activeTab === 'profile'
+            ? 'Manage your personal details and account password'
+            : activeTab === 'subscriptions'
+            ? 'View and manage your active subscription plans and billing cycles'
+            : 'Track your order history, view invoices, and complete payments'}
         </p>
       </div>
 
-      {/* Tabs Navigation */}
+      {/* Tabs Navigation - only show between Orders and Invoices when on orders/invoices page, completely removed from Profile page */}
+      {activeTab !== 'profile' && activeTab !== 'subscriptions' && (
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+          overflow: 'hidden',
+          marginBottom: '1rem'
+        }}>
+          <div style={{
+            display: 'flex',
+            borderBottom: '1px solid #e5e7eb',
+            overflowX: 'auto'
+          }}>
+            {[
+              { id: 'orders', label: '📦 Orders', path: '/shop/orders' },
+              { id: 'invoices', label: '📄 Invoices & Payments', path: '/shop/invoices' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (tab.id === 'invoices') {
+                    navigate('/shop/invoices');
+                  } else {
+                    setActiveTab(tab.id);
+                    navigate(tab.path);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: '1rem 1.5rem',
+                  border: 'none',
+                  background: activeTab === tab.id ? '#f9fafb' : 'white',
+                  color: activeTab === tab.id ? '#875A7B' : '#71717a',
+                  fontFamily: 'Quicksand, sans-serif',
+                  fontSize: '0.95rem',
+                  fontWeight: activeTab === tab.id ? '700' : '500',
+                  cursor: 'pointer',
+                  borderBottom: activeTab === tab.id ? '2px solid #875A7B' : '2px solid transparent',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== tab.id) e.target.style.background = '#fafafa';
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== tab.id) e.target.style.background = 'white';
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Main Container */}
       <div style={{
         background: 'white',
         borderRadius: '12px',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
         overflow: 'hidden'
       }}>
-        <div style={{
-          display: 'flex',
-          borderBottom: '1px solid #e5e7eb',
-          overflowX: 'auto'
-        }}>
-          {[
-            { id: 'profile', label: '👤 Profile', icon: '👤', path: '/shop/profile' },
-            { id: 'orders', label: '📦 Orders', icon: '📦', path: '/shop/orders' },
-            { id: 'subscriptions', label: '🔄 Subscriptions', icon: '🔄', path: '/shop/subscriptions' },
-            { id: 'invoices', label: '📄 Invoices', icon: '📄', path: '/shop/dashboard' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                if (tab.id === 'invoices') {
-                  navigate('/shop/dashboard');
-                } else {
-                  navigate(tab.path);
-                }
-              }}
-              style={{
-                flex: 1,
-                padding: '1rem 1.5rem',
-                border: 'none',
-                background: activeTab === tab.id ? '#f9fafb' : 'white',
-                color: activeTab === tab.id ? '#18181b' : '#71717a',
-                fontFamily: 'Quicksand, sans-serif',
-                fontSize: '0.95rem',
-                fontWeight: activeTab === tab.id ? '600' : '500',
-                cursor: 'pointer',
-                borderBottom: activeTab === tab.id ? '2px solid #18181b' : '2px solid transparent',
-                transition: 'all 0.2s ease',
-                whiteSpace: 'nowrap'
-              }}
-              onMouseEnter={(e) => {
-                if (activeTab !== tab.id) e.target.style.background = '#fafafa';
-              }}
-              onMouseLeave={(e) => {
-                if (activeTab !== tab.id) e.target.style.background = 'white';
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
 
         {/* Tab Content */}
         <div style={{ padding: '2rem' }}>
@@ -779,6 +799,29 @@ const CustomerDashboard = () => {
                         <div style={getStatusBadgeStyle(invoice.status)}>
                           {invoice.status}
                         </div>
+                        {invoice.status !== 'paid' && (
+                          <div style={{ marginTop: '0.5rem' }}>
+                            <button
+                              onClick={() => setStripeInvoice(invoice)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                padding: '0.45rem 0.9rem',
+                                background: 'linear-gradient(135deg, #635BFF 0%, #0A2540 100%)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '0.82rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(99, 91, 255, 0.3)'
+                              }}
+                            >
+                              ⚡ Pay with Stripe Gateway
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -788,6 +831,21 @@ const CustomerDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Stripe Payment Modal for Customer Portal */}
+      {stripeInvoice && (
+        <StripePaymentModal
+          isOpen={!!stripeInvoice}
+          onClose={() => setStripeInvoice(null)}
+          invoice={stripeInvoice}
+          customerName={currentUser?.name || profile.name}
+          isCustomerPortal={true}
+          onSuccess={() => {
+            fetchInvoices();
+            fetchSubscriptions();
+          }}
+        />
+      )}
     </div>
   );
 };

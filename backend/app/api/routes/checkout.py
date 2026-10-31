@@ -12,8 +12,10 @@ from app.models.product_variant import ProductVariant
 from app.models.recurring_plan import RecurringPlan, BillingPeriod
 from app.models.invoice import Invoice, InvoiceStatus
 from app.models.invoice_line import InvoiceLine
+from app.models.payment import Payment, PaymentMethod
 from app.api.routes.auth import get_current_user
 from app.models.user import User
+import uuid
 
 router = APIRouter()
 
@@ -28,6 +30,9 @@ class CheckoutRequest(BaseModel):
     cart: List[CartItem]
     shipping_address: str
     billing_address: str
+    payment_method: str = "stripe"
+    payment_reference: str = None
+    notes: str = None
 
 def calculate_next_billing_date(start_date: date, billing_period: BillingPeriod) -> date:
     """Calculate next billing date based on billing period"""
@@ -211,6 +216,25 @@ def process_checkout(
                     price_subtotal=line_total
                 )
                 db.add(invoice_line)
+
+                # Record invoice payment settlement
+                sub_method = PaymentMethod.stripe
+                if checkout_data.payment_method in ["cash", "bank_transfer", "credit_card", "stripe", "paypal", "upi"]:
+                    sub_method = PaymentMethod(checkout_data.payment_method)
+                
+                payment_ref = checkout_data.payment_reference or f"ch_stripe_{uuid.uuid4().hex[:14]}"
+                payment_record = Payment(
+                    invoice_id=invoice.id,
+                    amount=line_total,
+                    payment_method=sub_method,
+                    transaction_reference=payment_ref,
+                    payment_date=date_issued,
+                    notes=checkout_data.notes or f"Order {order.number} settlement via Stripe Gateway"
+                )
+                db.add(payment_record)
+
+                # Mark subscription as paid
+                subscription.payment_done = True
         
         # Update order total and mark as completed
         order.total_amount = total_amount

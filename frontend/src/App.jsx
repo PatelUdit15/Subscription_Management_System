@@ -14,6 +14,7 @@ import CustomerPortalPage from './pages/CustomerPortalPage'
 import MyProfile from './pages/MyProfile'
 import MyOrders from './pages/MyOrders'
 import OrderDetail from './pages/OrderDetail'
+import CustomerInvoices from './pages/CustomerInvoices'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -38,44 +39,28 @@ function AppRoutes() {
         }
       />
 
-      {/* Customer/Shop Routes - Only accessible by portal users */}
-      <Route
-        path="/shop"
-        element={
+      {/* Customer/Shop Routes - All wrapped in CustomerLayout for consistent UI */}
+      <Route path="/shop" element={<CustomerLayout />}>
+        <Route index element={
           <ProtectedRoute requiredRole="portal">
             <CustomerHome />
           </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/shop/my-profile"
-        element={
+        } />
+        <Route path="my-profile" element={
           <ProtectedRoute requiredRole="portal">
             <MyProfile />
           </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/shop/my-orders"
-        element={
+        } />
+        <Route path="my-orders" element={
           <ProtectedRoute requiredRole="portal">
             <MyOrders />
           </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/shop/order/:orderId"
-        element={
+        } />
+        <Route path="order/:orderId" element={
           <ProtectedRoute requiredRole="portal">
             <OrderDetail />
           </ProtectedRoute>
-        }
-      />
-      
-      <Route path="/shop" element={<CustomerLayout />}>
+        } />
         <Route path="products" element={
           <ProtectedRoute requiredRole="portal">
             <ShopProducts />
@@ -119,6 +104,11 @@ function AppRoutes() {
         <Route path="profile" element={
           <ProtectedRoute requiredRole="portal">
             <CustomerDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="invoices" element={
+          <ProtectedRoute requiredRole="portal">
+            <CustomerInvoices />
           </ProtectedRoute>
         } />
       </Route>
