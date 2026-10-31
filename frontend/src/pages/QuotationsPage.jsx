@@ -113,7 +113,7 @@ function QuotationsPage() {
                   <td>
                     <div>
                       <div className="font-medium">{quot.customer_name}</div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--muted-blue)' }}>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                         {quot.customer_email}
                       </div>
                     </div>
@@ -124,7 +124,7 @@ function QuotationsPage() {
                     </span>
                   </td>
                   <td>{formatDate(quot.validity_date)}</td>
-                  <td className="font-medium" style={{ color: 'var(--teal-blue)' }}>
+                  <td className="font-medium" style={{ color: 'var(--color-primary)' }}>
                     ${quot.total_amount.toFixed(2)}
                   </td>
                   <td>

@@ -10,7 +10,7 @@
 .btn-back {
   background: none;
   border: none;
-  color: var(--teal-blue);
+  color: var(--color-primary);
   font-family: var(--font-body);
   font-size: 0.95rem;
   font-weight: 600;
@@ -21,7 +21,7 @@
 }
 
 .btn-back:hover {
-  color: var(--soft-blue);
+  color: var(--color-primary-hover);
   transform: translateX(-4px);
 }
 
@@ -29,9 +29,9 @@
 .tabs-container {
   background: white;
   border-radius: 16px 16px 0 0;
-  box-shadow: 0 2px 8px rgba(0, 29, 57, 0.06);
+  box-shadow: 0 2px 8px rgba(135, 90, 123, 0.06);
   margin-top: 2rem;
-  border: 1px solid rgba(123, 189, 232, 0.15);
+  border: 1px solid rgba(135, 90, 123, 0.15);
   border-bottom: none;
 }
 
@@ -49,7 +49,7 @@
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 600;
-  color: var(--muted-blue);
+  color: var(--color-text-muted);
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border-bottom: 3px solid transparent;
@@ -57,23 +57,23 @@
 }
 
 .tab:hover {
-  background: rgba(189, 216, 233, 0.08);
-  color: var(--teal-blue);
+  background: rgba(234, 219, 231, 0.3);
+  color: var(--color-primary);
 }
 
 .tab.active {
-  color: var(--teal-blue);
-  border-bottom-color: var(--teal-blue);
-  background: rgba(189, 216, 233, 0.12);
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: rgba(234, 219, 231, 0.45);
 }
 
 /* Tab Content */
 .tab-content {
   background: white;
   border-radius: 0 0 16px 16px;
-  box-shadow: 0 4px 12px rgba(0, 29, 57, 0.08);
+  box-shadow: 0 4px 12px rgba(135, 90, 123, 0.08);
   padding: 2rem;
-  border: 1px solid rgba(123, 189, 232, 0.15);
+  border: 1px solid rgba(135, 90, 123, 0.15);
   border-top: none;
 }
 
@@ -87,7 +87,7 @@
   justify-content: flex-end;
   gap: 1rem;
   padding-top: 1.5rem;
-  border-top: 2px solid rgba(123, 189, 232, 0.2);
+  border-top: 2px solid rgba(135, 90, 123, 0.2);
   margin-top: 2rem;
 }
 
@@ -102,14 +102,14 @@
 
 .variants-subtitle {
   font-family: var(--font-body);
-  color: var(--muted-blue);
+  color: var(--color-text-muted);
   font-size: 0.95rem;
   margin: 0;
   flex: 1;
 }
 
 .total-price {
-  color: var(--teal-blue);
+  color: var(--color-primary);
   font-size: 1.05rem;
 }
 
@@ -117,7 +117,7 @@
   display: block;
   margin-top: 0.5rem;
   font-size: 0.85rem;
-  color: var(--muted-blue);
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
@@ -128,13 +128,13 @@
   }
 
   .tab {
-    border-bottom: 1px solid rgba(123, 189, 232, 0.15);
+    border-bottom: 1px solid rgba(135, 90, 123, 0.15);
     border-left: 3px solid transparent;
   }
 
   .tab.active {
-    border-bottom-color: rgba(123, 189, 232, 0.15);
-    border-left-color: var(--teal-blue);
+    border-bottom-color: rgba(135, 90, 123, 0.15);
+    border-left-color: var(--color-primary);
   }
 
   .variants-header {

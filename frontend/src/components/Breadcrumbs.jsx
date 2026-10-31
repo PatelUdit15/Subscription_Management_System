@@ -37,12 +37,12 @@ const Breadcrumbs = () => {
       <Link
         to="/admin"
         style={{
-          color: '#71717a',
+          color: 'var(--color-text-secondary)',
           textDecoration: 'none',
           transition: 'color 0.2s ease'
         }}
-        onMouseEnter={(e) => e.target.style.color = '#18181b'}
-        onMouseLeave={(e) => e.target.style.color = '#71717a'}
+        onMouseEnter={(e) => e.target.style.color = 'var(--color-primary)'}
+        onMouseLeave={(e) => e.target.style.color = 'var(--color-text-secondary)'}
       >
         Home
       </Link>
@@ -60,11 +60,11 @@ const Breadcrumbs = () => {
         
         return (
           <React.Fragment key={to}>
-            <span style={{ color: '#d4d4d8' }}>/</span>
+            <span style={{ color: 'var(--color-border)' }}>/</span>
             {isLast ? (
               <span style={{
-                color: '#18181b',
-                fontWeight: '600'
+                color: 'var(--color-primary-dark)',
+                fontWeight: '700'
               }}>
                 {displayName}
               </span>
@@ -72,12 +72,12 @@ const Breadcrumbs = () => {
               <Link
                 to={to}
                 style={{
-                  color: '#71717a',
+                  color: 'var(--color-text-secondary)',
                   textDecoration: 'none',
                   transition: 'color 0.2s ease'
                 }}
-                onMouseEnter={(e) => e.target.style.color = '#18181b'}
-                onMouseLeave={(e) => e.target.style.color = '#71717a'}
+                onMouseEnter={(e) => e.target.style.color = 'var(--color-primary)'}
+                onMouseLeave={(e) => e.target.style.color = 'var(--color-text-secondary)'}
               >
                 {displayName}
               </Link>

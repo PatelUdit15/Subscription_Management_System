@@ -22,8 +22,8 @@
   background: white;
   border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 29, 57, 0.08);
-  border: 1px solid rgba(123, 189, 232, 0.15);
+  box-shadow: 0 4px 12px rgba(135, 90, 123, 0.08);
+  border: 1px solid rgba(135, 90, 123, 0.15);
 }
 
 .card-title {
@@ -48,7 +48,7 @@
 
 .info-label {
   font-weight: 600;
-  color: var(--muted-blue);
+  color: var(--color-text-muted);
 }
 
 .info-value {
@@ -60,8 +60,8 @@
   background: white;
   border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 29, 57, 0.08);
-  border: 1px solid rgba(123, 189, 232, 0.15);
+  box-shadow: 0 4px 12px rgba(135, 90, 123, 0.08);
+  border: 1px solid rgba(135, 90, 123, 0.15);
 }
 
 .section-title {
@@ -77,11 +77,11 @@
 }
 
 .totals-card-detail {
-  background: linear-gradient(135deg, var(--teal-blue) 0%, var(--soft-blue) 100%);
+  background: linear-gradient(135deg, #714B67 0%, #875A7B 100%);
   color: white;
   border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 8px 24px rgba(0, 29, 57, 0.15);
+  box-shadow: 0 8px 24px rgba(135, 90, 123, 0.15);
   min-width: 400px;
 }
 

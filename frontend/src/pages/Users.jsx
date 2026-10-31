@@ -159,21 +159,21 @@ function Users() {
   });
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Quicksand, sans-serif' }}>
+    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'var(--font-body)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#18181b', margin: 0 }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-primary-dark)', margin: 0, fontFamily: 'var(--font-heading)' }}>
             Staff & User Management
           </h1>
-          <p style={{ color: '#71717a', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
+          <p style={{ color: 'var(--color-text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
             Control staff access and user accounts. Only Admins can add or configure staff members.
           </p>
         </div>
         <button
           onClick={handleOpenAdd}
           style={{
-            background: '#18181b',
+            background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
             color: '#fff',
             padding: '0.65rem 1.25rem',
             borderRadius: '8px',
@@ -183,8 +183,11 @@ function Users() {
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            boxShadow: '0 4px 12px rgba(135, 90, 123, 0.25)',
+            transition: 'all 0.2s ease'
           }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
           <span>＋</span> Add Staff Member
         </button>
@@ -212,23 +215,27 @@ function Users() {
           style={{
             flex: '1',
             minWidth: '240px',
-            padding: '0.6rem 1rem',
-            border: '1px solid #e4e4e7',
+            padding: '0.65rem 1rem',
+            border: '1.5px solid rgba(135, 90, 123, 0.2)',
             borderRadius: '8px',
             outline: 'none',
-            fontSize: '0.9rem'
+            fontSize: '0.9rem',
+            background: '#fff'
           }}
+          onFocus={(e) => e.target.style.borderColor = 'var(--color-primary)'}
+          onBlur={(e) => e.target.style.borderColor = 'rgba(135, 90, 123, 0.2)'}
         />
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
           style={{
-            padding: '0.6rem 1rem',
-            border: '1px solid #e4e4e7',
+            padding: '0.65rem 1rem',
+            border: '1.5px solid rgba(135, 90, 123, 0.2)',
             borderRadius: '8px',
             outline: 'none',
             fontSize: '0.9rem',
-            background: '#fff'
+            background: '#fff',
+            color: 'var(--color-text-primary)'
           }}
         >
           <option value="all">All Roles</option>
@@ -239,44 +246,54 @@ function Users() {
       </div>
 
       {/* Table */}
-      <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e4e4e7', overflow: 'hidden' }}>
+      <div style={{
+        background: '#fff',
+        borderRadius: '14px',
+        border: '1px solid rgba(135, 90, 123, 0.15)',
+        overflow: 'hidden',
+        boxShadow: '0 4px 12px rgba(135, 90, 123, 0.06)'
+      }}>
         {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: '#71717a' }}>Loading staff and users...</div>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>Loading staff and users...</div>
         ) : filteredUsers.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: '#71717a' }}>No users found matching your criteria.</div>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>No users found matching your criteria.</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
             <thead>
-              <tr style={{ background: '#f4f4f5', borderBottom: '1px solid #e4e4e7', color: '#52525b', fontWeight: '600' }}>
-                <th style={{ padding: '0.85rem 1rem' }}>Name</th>
-                <th style={{ padding: '0.85rem 1rem' }}>Email</th>
-                <th style={{ padding: '0.85rem 1rem' }}>Role</th>
-                <th style={{ padding: '0.85rem 1rem' }}>Status</th>
-                <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Actions</th>
+              <tr style={{
+                background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
+                color: 'white',
+                fontWeight: '600'
+              }}>
+                <th style={{ padding: '0.9rem 1.25rem' }}>Name</th>
+                <th style={{ padding: '0.9rem 1.25rem' }}>Email</th>
+                <th style={{ padding: '0.9rem 1.25rem' }}>Role</th>
+                <th style={{ padding: '0.9rem 1.25rem' }}>Status</th>
+                <th style={{ padding: '0.9rem 1.25rem', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map((u) => {
                 const isCurrent = u.id === currentUser?.id;
                 const roleColors = {
-                  admin: { bg: '#ede9fe', color: '#6d28d9' },
+                  admin: { bg: 'var(--color-accent-light)', color: 'var(--color-primary-dark)' },
                   internal: { bg: '#e0f2fe', color: '#0369a1' },
                   portal: { bg: '#fef3c7', color: '#b45309' }
                 };
                 const style = roleColors[u.role] || { bg: '#f4f4f5', color: '#52525b' };
 
                 return (
-                  <tr key={u.id} style={{ borderBottom: '1px solid #f4f4f5' }}>
-                    <td style={{ padding: '0.85rem 1rem', fontWeight: '600', color: '#18181b' }}>
-                      {u.name} {isCurrent && <span style={{ color: '#a1a1aa', fontWeight: 'normal' }}>(You)</span>}
+                  <tr key={u.id} style={{ borderBottom: '1px solid rgba(135, 90, 123, 0.08)' }}>
+                    <td style={{ padding: '0.9rem 1.25rem', fontWeight: '600', color: 'var(--color-text-primary)' }}>
+                      {u.name} {isCurrent && <span style={{ color: 'var(--color-primary)', fontWeight: 'normal' }}>(You)</span>}
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', color: '#52525b' }}>{u.email}</td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
+                    <td style={{ padding: '0.9rem 1.25rem', color: 'var(--color-text-secondary)' }}>{u.email}</td>
+                    <td style={{ padding: '0.9rem 1.25rem' }}>
                       <span
                         style={{
-                          padding: '0.25rem 0.65rem',
+                          padding: '0.3rem 0.75rem',
                           borderRadius: '9999px',
-                          fontSize: '0.78rem',
+                          fontSize: '0.8rem',
                           fontWeight: '600',
                           background: style.bg,
                           color: style.color,
@@ -286,7 +303,7 @@ function Users() {
                         {u.role === 'internal' ? 'Internal Staff' : u.role}
                       </span>
                     </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
+                    <td style={{ padding: '0.9rem 1.25rem' }}>
                       <span
                         style={{
                           display: 'inline-block',
@@ -299,16 +316,17 @@ function Users() {
                       />
                       {u.is_active ? 'Active' : 'Inactive'}
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
+                    <td style={{ padding: '0.9rem 1.25rem', textAlign: 'right' }}>
                       <button
                         onClick={() => handleOpenEdit(u)}
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#2563eb',
+                          color: 'var(--color-primary)',
                           cursor: 'pointer',
                           fontWeight: '600',
-                          marginRight: '1rem'
+                          marginRight: '1rem',
+                          fontSize: '0.9rem'
                         }}
                       >
                         Edit
@@ -321,7 +339,8 @@ function Users() {
                             border: 'none',
                             color: '#dc2626',
                             cursor: 'pointer',
-                            fontWeight: '600'
+                            fontWeight: '600',
+                            fontSize: '0.9rem'
                           }}
                         >
                           Remove
@@ -342,29 +361,33 @@ function Users() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(46, 46, 46, 0.6)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: '1rem'
+            padding: '1rem',
+            backdropFilter: 'blur(6px)'
           }}
         >
           <div
             style={{
               background: '#fff',
-              borderRadius: '12px',
+              borderRadius: '16px',
               maxWidth: '500px',
               width: '100%',
               padding: '1.75rem',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+              boxShadow: '0 20px 25px -5px rgba(135, 90, 123, 0.2)',
+              border: '1px solid rgba(135, 90, 123, 0.15)'
             }}
           >
-            <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '700' }}>Add New Staff Member</h2>
+            <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.35rem', fontWeight: '700', color: 'var(--color-primary-dark)', fontFamily: 'var(--font-heading)' }}>
+              Add New Staff Member
+            </h2>
 
-            <form onSubmit={handleAddSubmit}>
+            <form onSubmit={handleAddSubmit} style={{ padding: 0 }}>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem', color: 'var(--color-primary-dark)' }}>
                   Full Name *
                 </label>
                 <input
@@ -372,12 +395,12 @@ function Users() {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 />
               </div>
 
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem', color: 'var(--color-primary-dark)' }}>
                   Email Address *
                 </label>
                 <input
@@ -385,18 +408,18 @@ function Users() {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 />
               </div>
 
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem', color: 'var(--color-primary-dark)' }}>
                   Role *
                 </label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 >
                   <option value="internal">Internal Staff (Limited day-to-day work)</option>
                   <option value="admin">Admin (Full system control)</option>
@@ -404,7 +427,7 @@ function Users() {
               </div>
 
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem', color: 'var(--color-primary-dark)' }}>
                   Password *
                 </label>
                 <input
@@ -413,10 +436,10 @@ function Users() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Enter strong password"
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 />
                 {/* Brightloop Password rules */}
-                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', background: '#fafafa', padding: '0.6rem', borderRadius: '6px' }}>
+                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', background: 'var(--color-bg-soft)', padding: '0.6rem', borderRadius: '8px' }}>
                   <div style={{ color: pwdValidation.length ? '#15803d' : '#a1a1aa' }}>
                     {pwdValidation.length ? '✓' : '○'} At least 8 characters
                   </div>
@@ -438,9 +461,10 @@ function Users() {
                   onClick={() => setShowAddModal(false)}
                   style={{
                     padding: '0.6rem 1.2rem',
-                    background: '#f4f4f5',
-                    border: 'none',
-                    borderRadius: '6px',
+                    background: '#fff',
+                    border: '1.5px solid rgba(135, 90, 123, 0.3)',
+                    color: 'var(--color-primary-dark)',
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     fontWeight: '600'
                   }}
@@ -452,12 +476,13 @@ function Users() {
                   disabled={!isPasswordValid}
                   style={{
                     padding: '0.6rem 1.2rem',
-                    background: isPasswordValid ? '#18181b' : '#a1a1aa',
+                    background: isPasswordValid ? 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)' : '#a1a1aa',
                     color: '#fff',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     cursor: isPasswordValid ? 'pointer' : 'not-allowed',
-                    fontWeight: '600'
+                    fontWeight: '600',
+                    boxShadow: isPasswordValid ? '0 4px 12px rgba(135, 90, 123, 0.25)' : 'none'
                   }}
                 >
                   Create Member
@@ -474,31 +499,33 @@ function Users() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(46, 46, 46, 0.6)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: '1rem'
+            padding: '1rem',
+            backdropFilter: 'blur(6px)'
           }}
         >
           <div
             style={{
               background: '#fff',
-              borderRadius: '12px',
+              borderRadius: '16px',
               maxWidth: '500px',
               width: '100%',
               padding: '1.75rem',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+              boxShadow: '0 20px 25px -5px rgba(135, 90, 123, 0.2)',
+              border: '1px solid rgba(135, 90, 123, 0.15)'
             }}
           >
-            <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '700' }}>
+            <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.35rem', fontWeight: '700', color: 'var(--color-primary-dark)', fontFamily: 'var(--font-heading)' }}>
               Edit User: {selectedUser.name}
             </h2>
 
-            <form onSubmit={handleEditSubmit}>
+            <form onSubmit={handleEditSubmit} style={{ padding: 0 }}>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem', color: 'var(--color-primary-dark)' }}>
                   Full Name *
                 </label>
                 <input
@@ -506,18 +533,18 @@ function Users() {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 />
               </div>
 
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem', color: 'var(--color-primary-dark)' }}>
                   Role *
                 </label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 >
                   <option value="admin">Admin</option>
                   <option value="internal">Internal Staff</option>
@@ -526,7 +553,7 @@ function Users() {
               </div>
 
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: '600' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: '600', color: 'var(--color-text-primary)' }}>
                   <input
                     type="checkbox"
                     checked={formData.is_active}
@@ -537,7 +564,7 @@ function Users() {
               </div>
 
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem', color: 'var(--color-primary-dark)' }}>
                   Reset Password (leave empty to keep current)
                 </label>
                 <input
@@ -545,10 +572,10 @@ function Users() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Enter new password if changing"
-                  style={{ width: '100%', padding: '0.6rem', border: '1px solid #d4d4d8', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid rgba(135, 90, 123, 0.2)', borderRadius: '8px' }}
                 />
                 {formData.password && (
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', background: '#fafafa', padding: '0.6rem', borderRadius: '6px' }}>
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', background: 'var(--color-bg-soft)', padding: '0.6rem', borderRadius: '8px' }}>
                     <div style={{ color: pwdValidation.length ? '#15803d' : '#a1a1aa' }}>
                       {pwdValidation.length ? '✓' : '○'} At least 8 characters
                     </div>
@@ -571,9 +598,10 @@ function Users() {
                   onClick={() => setShowEditModal(false)}
                   style={{
                     padding: '0.6rem 1.2rem',
-                    background: '#f4f4f5',
-                    border: 'none',
-                    borderRadius: '6px',
+                    background: '#fff',
+                    border: '1.5px solid rgba(135, 90, 123, 0.3)',
+                    color: 'var(--color-primary-dark)',
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     fontWeight: '600'
                   }}
@@ -585,12 +613,13 @@ function Users() {
                   disabled={formData.password ? !isPasswordValid : false}
                   style={{
                     padding: '0.6rem 1.2rem',
-                    background: '#18181b',
+                    background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
                     color: '#fff',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     cursor: 'pointer',
-                    fontWeight: '600'
+                    fontWeight: '600',
+                    boxShadow: '0 4px 12px rgba(135, 90, 123, 0.25)'
                   }}
                 >
                   Save Changes

@@ -85,11 +85,11 @@ function QuotationTemplateDetailPage() {
                 Pricing Summary
               </h3>
               <div style={{ 
-                background: 'linear-gradient(135deg, var(--teal-blue) 0%, var(--soft-blue) 100%)',
+                background: 'linear-gradient(135deg, #714B67 0%, #875A7B 100%)',
                 color: 'white',
                 padding: '1.5rem',
                 borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(0, 29, 57, 0.12)'
+                boxShadow: '0 4px 12px rgba(135, 90, 123, 0.12)'
               }}>
                 <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.5rem' }}>Total Amount</div>
                 <div style={{ fontSize: '2rem', fontWeight: 'bold', fontFamily: 'var(--font-heading)' }}>
@@ -126,7 +126,7 @@ function QuotationTemplateDetailPage() {
                       <td className="font-medium">{line.product_name}</td>
                       <td>{line.quantity}</td>
                       <td>${line.unit_price.toFixed(2)}</td>
-                      <td className="font-medium" style={{ color: 'var(--teal-blue)' }}>
+                      <td className="font-medium" style={{ color: 'var(--color-primary)' }}>
                         ${line.total_price.toFixed(2)}
                       </td>
                     </tr>
@@ -134,11 +134,11 @@ function QuotationTemplateDetailPage() {
                 )}
               </tbody>
               <tfoot>
-                <tr style={{ borderTop: '2px solid var(--teal-blue)' }}>
+                <tr style={{ borderTop: '2px solid var(--color-primary)' }}>
                   <td colSpan="3" style={{ textAlign: 'right', fontWeight: 'bold', padding: '1rem 1.5rem' }}>
                     Total Amount:
                   </td>
-                  <td style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--teal-blue)', padding: '1rem 1.5rem' }}>
+                  <td style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--color-primary)', padding: '1rem 1.5rem' }}>
                     ${template.total_amount.toFixed(2)}
                   </td>
                 </tr>

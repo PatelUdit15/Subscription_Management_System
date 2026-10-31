@@ -64,22 +64,23 @@ const ConfigurationDropdown = () => {
           alignItems: 'center',
           gap: '0.5rem',
           padding: '0.5rem 1rem',
-          background: isOpen ? '#27272a' : '#18181b',
+          background: isOpen ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.15)',
           color: 'white',
-          border: 'none',
-          borderRadius: '6px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '8px',
           cursor: 'pointer',
           fontSize: '0.9rem',
           fontFamily: 'Quicksand, sans-serif',
           fontWeight: '600',
           transition: 'all 0.2s ease',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
+          backdropFilter: 'blur(10px)'
         }}
         onMouseEnter={(e) => {
-          if (!isOpen) e.target.style.background = '#27272a';
+          e.target.style.background = 'rgba(255, 255, 255, 0.25)';
         }}
         onMouseLeave={(e) => {
-          if (!isOpen) e.target.style.background = '#18181b';
+          if (!isOpen) e.target.style.background = 'rgba(255, 255, 255, 0.15)';
         }}
       >
         <span>⚙️ Configuration</span>
@@ -111,11 +112,12 @@ const ConfigurationDropdown = () => {
             right: 0,
             minWidth: '280px',
             background: 'white',
-            borderRadius: '8px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px rgba(135, 90, 123, 0.2)',
             zIndex: 1000,
             overflow: 'hidden',
-            animation: 'slideDown 0.2s ease'
+            animation: 'slideDown 0.2s ease',
+            border: '1px solid rgba(135, 90, 123, 0.15)'
           }}
         >
           {configItems.map((section, sectionIndex) => (
@@ -124,11 +126,11 @@ const ConfigurationDropdown = () => {
               <div
                 style={{
                   padding: '0.75rem 1rem',
-                  background: '#f9fafb',
-                  borderBottom: '1px solid #e5e7eb',
+                  background: 'var(--color-bg-soft)',
+                  borderBottom: '1px solid var(--color-border)',
                   fontSize: '0.75rem',
                   fontWeight: '700',
-                  color: '#71717a',
+                  color: 'var(--color-primary-dark)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                   fontFamily: 'Gabarito, sans-serif'
@@ -148,28 +150,30 @@ const ConfigurationDropdown = () => {
                     background: 'white',
                     border: 'none',
                     borderBottom: itemIndex === section.items.length - 1 && sectionIndex !== configItems.length - 1
-                      ? '1px solid #e5e7eb'
+                      ? '1px solid var(--color-border)'
                       : 'none',
                     textAlign: 'left',
                     cursor: 'pointer',
                     fontSize: '0.9rem',
                     fontFamily: 'Quicksand, sans-serif',
-                    color: '#18181b',
+                    color: 'var(--color-text-primary)',
                     transition: 'all 0.15s ease',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.background = '#f9fafb';
+                    e.target.style.background = 'var(--color-accent-light)';
+                    e.target.style.color = 'var(--color-primary-dark)';
                     e.target.style.paddingLeft = '1.25rem';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.background = 'white';
+                    e.target.style.color = 'var(--color-text-primary)';
                     e.target.style.paddingLeft = '1rem';
                   }}
                 >
-                  <span style={{ fontSize: '0.7rem', color: '#71717a' }}>▸</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>▸</span>
                   {item.label}
                 </button>
               ))}
