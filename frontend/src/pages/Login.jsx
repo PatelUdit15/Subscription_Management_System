@@ -100,7 +100,13 @@ function Login() {
       if (!err.response) {
         setForgotError('Cannot reach backend server. Please ensure the backend is running at http://localhost:8000.');
       } else {
-        setForgotError(err.response?.data?.detail || 'Failed to send verification code. Please check your email.');
+        const detail = err.response?.data?.detail;
+        const msg = typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map(d => d.msg || JSON.stringify(d)).join(', ')
+            : (err.response?.data?.message || 'Failed to send verification code. Please check your email.');
+        setForgotError(msg);
       }
     } finally {
       setForgotLoading(false);
@@ -159,7 +165,13 @@ function Login() {
       if (!err.response) {
         setForgotError('Cannot reach backend server. Please ensure the backend is running at http://localhost:8000.');
       } else {
-        setForgotError(err.response?.data?.detail || 'Failed to reset password. Please check your verification code.');
+        const detail = err.response?.data?.detail;
+        const msg = typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map(d => d.msg || JSON.stringify(d)).join(', ')
+            : (err.response?.data?.message || 'Failed to reset password. Please check your verification code.');
+        setForgotError(msg);
       }
     } finally {
       setForgotLoading(false);
