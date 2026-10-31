@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
     
+    # Google Mail (Gmail) SMTP Configuration
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_TLS: bool = True
+    EMAILS_FROM_EMAIL: Optional[str] = None
+    EMAILS_FROM_NAME: str = "SubscriptionFlow"
+
     class Config:
         env_file = (_backend_env, ".env")
         case_sensitive = True

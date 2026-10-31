@@ -19,6 +19,7 @@ from app.models.order import Order, OrderStatus
 from app.models.order_line import OrderLine
 from app.models.customer import Customer
 from app.models.payment import Payment, PaymentMethod
+from app.models.password_reset_otp import PasswordResetOTP
 
 __all__ = [
     "User", "UserRole", "CompanySettings", "Tax", "TaxType", "Discount", "DiscountType",
@@ -28,5 +29,6 @@ __all__ = [
     "Subscription", "SubscriptionStatus", "SubscriptionLine",
     "Invoice", "InvoiceStatus", "InvoiceLine",
     "Order", "OrderStatus", "OrderLine",
-    "Customer", "Payment", "PaymentMethod"
+    "Customer", "Payment", "PaymentMethod",
+    "PasswordResetOTP"
 ]

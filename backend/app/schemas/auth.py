@@ -21,9 +21,20 @@ class ForgotPasswordRequest(BaseModel):
 
 class ForgotPasswordResponse(BaseModel):
     message: str
-    reset_token: Optional[str] = None
-    reset_link: Optional[str] = None
+    email: str
+    expires_in_minutes: int = 10
+    otp_sent: bool = True
+    dev_otp: Optional[str] = None  # Available if SMTP is in dev/unconfigured mode
+
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+class VerifyOTPResponse(BaseModel):
+    message: str
+    valid: bool
 
 class ResetPasswordRequest(BaseModel):
-    token: str
+    email: EmailStr
+    otp: str
     new_password: str
