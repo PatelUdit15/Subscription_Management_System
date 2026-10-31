@@ -287,7 +287,7 @@ const MyOrders = () => {
                               fontWeight: '700',
                               fontFamily: 'Gabarito, sans-serif'
                             }}>
-                              ${order.total_amount?.toFixed(2) || '0.00'}
+                              ₹{order.total_amount?.toFixed(2) || '0.00'}
                             </span>
                             <div style={{
                               padding: '0.35rem 0.85rem',
@@ -467,19 +467,19 @@ const MyOrders = () => {
                                       <tr key={line.id} style={{ borderBottom: idx < orderDetails[order.id].order_lines.length - 1 ? '1px solid #EADBE7' : 'none' }}>
                                         <td style={{ padding: '1rem 0.75rem', color: '#2E2E2E' }}>
                                           <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{line.product_name}</div>
-                                          <div style={{ fontSize: '0.8rem', color: '#6B6B6B' }}>10% tax on your order</div>
+                                          <div style={{ fontSize: '0.8rem', color: '#6B6B6B' }}>18% GST on your order</div>
                                         </td>
                                         <td style={{ padding: '1rem 0.75rem', textAlign: 'center', color: '#2E2E2E', fontWeight: '600' }}>
                                           {line.quantity}
                                         </td>
                                         <td style={{ padding: '1rem 0.75rem', textAlign: 'right', color: '#2E2E2E' }}>
-                                          ${line.unit_price?.toFixed(2)}
+                                          ₹{line.unit_price?.toFixed(2)}
                                         </td>
                                         <td style={{ padding: '1rem 0.75rem', textAlign: 'right', color: '#6B6B6B' }}>
-                                          10%
+                                          18%
                                         </td>
                                         <td style={{ padding: '1rem 0.75rem', textAlign: 'right', color: '#2E2E2E', fontWeight: '700' }}>
-                                          ${line.total_price?.toFixed(2)}
+                                          ₹{line.total_price?.toFixed(2)}
                                         </td>
                                       </tr>
                                     ))}
@@ -497,15 +497,15 @@ const MyOrders = () => {
                                   gap: '0.75rem'
                                 }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', width: '250px' }}>
-                                    <span style={{ color: '#6B6B6B' }}>Untaxed Amount:</span>
+                                    <span style={{ color: '#6B6B6B' }}>Subtotal:</span>
                                     <span style={{ color: '#2E2E2E', fontWeight: '600' }}>
-                                      ${(orderDetails[order.id].total_amount / 1.1).toFixed(2)}
+                                      ₹{(orderDetails[order.id].total_amount / 1.18).toFixed(2)}
                                     </span>
                                   </div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', width: '250px' }}>
-                                    <span style={{ color: '#6B6B6B' }}>Taxes (10%):</span>
-                                    <span style={{ color: '#2E2E2E', fontWeight: '600' }}>
-                                      ${(orderDetails[order.id].total_amount * 0.1 / 1.1).toFixed(2)}
+                                    <span style={{ color: '#6B6B6B' }}>GST (18%):</span>
+                                    <span style={{ color: '#1e40af', fontWeight: '600' }}>
+                                      +₹{(orderDetails[order.id].total_amount - (orderDetails[order.id].total_amount / 1.18)).toFixed(2)}
                                     </span>
                                   </div>
                                   <div style={{
@@ -517,7 +517,7 @@ const MyOrders = () => {
                                   }}>
                                     <span style={{ color: '#875A7B', fontSize: '1.15rem', fontWeight: '700', fontFamily: 'Gabarito, sans-serif' }}>Total:</span>
                                     <span style={{ color: '#875A7B', fontSize: '1.15rem', fontWeight: '700', fontFamily: 'Gabarito, sans-serif' }}>
-                                      ${orderDetails[order.id].total_amount?.toFixed(2)}
+                                      ₹{orderDetails[order.id].total_amount?.toFixed(2)}
                                     </span>
                                   </div>
                                 </div>

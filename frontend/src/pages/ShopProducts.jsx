@@ -51,7 +51,10 @@ const ShopProducts = () => {
           planId: selectedPlan.id,
           planName: selectedPlan.name,
           quantity: 1,
-          finalPrice: product.base_price * selectedPlan.duration_months,
+          unitPrice: product.base_price,
+          subtotal: product.base_price,
+          taxAmount: Math.round(product.base_price * 0.18 * 100) / 100,
+          finalPrice: Math.round(product.base_price * 1.18 * 100) / 100,
           addedAt: new Date().toISOString()
         };
 
@@ -82,9 +85,9 @@ const ShopProducts = () => {
       const matchesCategory = selectedCategory === 'all' || product.product_type === selectedCategory;
       
       let matchesPrice = true;
-      if (priceRange === 'under50') matchesPrice = product.base_price < 50;
-      else if (priceRange === '50to100') matchesPrice = product.base_price >= 50 && product.base_price <= 100;
-      else if (priceRange === 'over100') matchesPrice = product.base_price > 100;
+      if (priceRange === 'under500') matchesPrice = product.base_price < 500;
+      else if (priceRange === '500to1000') matchesPrice = product.base_price >= 500 && product.base_price <= 1000;
+      else if (priceRange === 'over1000') matchesPrice = product.base_price > 1000;
       
       return matchesSearch && matchesCategory && matchesPrice;
     })
@@ -197,9 +200,9 @@ const ShopProducts = () => {
               </h3>
               {[
                 { value: 'all', label: 'All Prices' },
-                { value: 'under50', label: 'Under $50' },
-                { value: '50to100', label: '$50 - $100' },
-                { value: 'over100', label: 'Over $100' }
+                { value: 'under500', label: 'Under ₹500' },
+                { value: '500to1000', label: '₹500 - ₹1,000' },
+                { value: 'over1000', label: 'Over ₹1,000' }
               ].map(range => (
                 <button
                   key={range.value}
@@ -361,7 +364,7 @@ const ShopProducts = () => {
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     display: 'flex',
                     flexDirection: 'column',
-                    minHeight: '350px',
+                    minHeight: 'auto',
                     boxShadow: '0 2px 8px rgba(46, 46, 46, 0.05)'
                   }}
                   onMouseEnter={(e) => {
@@ -403,7 +406,7 @@ const ShopProducts = () => {
                         color: '#2E2E2E',
                         fontSize: '1.1rem',
                         fontWeight: '700',
-                        marginBottom: '0.5rem',
+                        marginBottom: '0.75rem',
                         fontFamily: 'Gabarito, sans-serif',
                         cursor: 'pointer',
                         transition: 'color 0.2s ease'
@@ -413,21 +416,6 @@ const ShopProducts = () => {
                     >
                       {product.name}
                     </h3>
-
-                    <p style={{
-                      color: '#6B6B6B',
-                      fontSize: '0.85rem',
-                      lineHeight: 1.5,
-                      marginBottom: '1rem',
-                      flex: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical'
-                    }}>
-                      {product.description || 'No description available'}
-                    </p>
 
                     <div style={{
                       display: 'flex',
@@ -443,7 +431,7 @@ const ShopProducts = () => {
                         fontWeight: '700',
                         fontFamily: 'Gabarito, sans-serif'
                       }}>
-                        ${product.base_price?.toFixed(2) || '0.00'}
+                        ₹{product.base_price?.toFixed(2) || '0.00'}
                       </div>
                       <div style={{
                         color: '#6B6B6B',

@@ -108,7 +108,7 @@ function AppRoutes() {
         } />
         <Route path="invoices" element={
           <ProtectedRoute requiredRole="portal">
-            <CustomerInvoices />
+            <CustomerDashboard />
           </ProtectedRoute>
         } />
       </Route>

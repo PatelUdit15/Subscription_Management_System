@@ -390,22 +390,31 @@ def create_invoice_from_subscription(
         SubscriptionLine.subscription_id == subscription.id
     ).all()
     
+    default_tax = db.query(Tax).filter(Tax.is_active == True).first()
+    default_rate = default_tax.value if default_tax else 18.0
+    default_tax_id = default_tax.id if default_tax else None
+
     total_amount = 0.0
     if not subscription_lines:
         unit_price = subscription.recurring_amount or 0.0
+        tax_amount = round(unit_price * (default_rate / 100.0), 2)
         line = InvoiceLine(
             invoice_id=invoice.id,
             product_id=subscription.product_id,
             variant_id=None,
             quantity=1.0,
             unit_price=unit_price,
-            tax_rate=0.0,
+            tax_rate=default_rate,
+            tax_id=default_tax_id,
             price_subtotal=unit_price
         )
         db.add(line)
-        total_amount = unit_price
+        total_amount = unit_price + tax_amount
     else:
         for sub_line in subscription_lines:
+            rate = getattr(sub_line, 'tax_rate', 0.0) or default_rate
+            line_subtotal = sub_line.subtotal or (sub_line.quantity * sub_line.unit_price)
+            tax_amount = round(line_subtotal * (rate / 100.0), 2)
             line = InvoiceLine(
                 invoice_id=invoice.id,
                 product_id=sub_line.product_id,
@@ -413,13 +422,14 @@ def create_invoice_from_subscription(
                 description=getattr(sub_line, 'description', None),
                 quantity=sub_line.quantity,
                 unit_price=sub_line.unit_price,
-                tax_rate=getattr(sub_line, 'tax_rate', 0.0),
-                price_subtotal=sub_line.subtotal
+                tax_rate=rate,
+                tax_id=default_tax_id,
+                price_subtotal=line_subtotal
             )
             db.add(line)
-            total_amount += sub_line.subtotal
+            total_amount += (line_subtotal + tax_amount)
     
-    invoice.total_amount = total_amount
+    invoice.total_amount = round(total_amount, 2)
     
     # Advance billing date if present
     plan = db.query(RecurringPlan).filter(RecurringPlan.id == subscription.recurring_plan_id).first()
@@ -499,21 +509,30 @@ def run_billing_day(
         db.flush()
         
         sub_lines = db.query(SubscriptionLine).filter(SubscriptionLine.subscription_id == sub.id).all()
+        default_tax = db.query(Tax).filter(Tax.is_active == True).first()
+        default_rate = default_tax.value if default_tax else 18.0
+        default_tax_id = default_tax.id if default_tax else None
         total_amount = 0.0
         
         if not sub_lines:
             price = sub.recurring_amount or 0.0
+            tax_amount = round(price * (default_rate / 100.0), 2)
             line = InvoiceLine(
                 invoice_id=invoice.id,
                 product_id=sub.product_id,
                 quantity=1.0,
                 unit_price=price,
+                tax_rate=default_rate,
+                tax_id=default_tax_id,
                 price_subtotal=price
             )
             db.add(line)
-            total_amount = price
+            total_amount = price + tax_amount
         else:
             for sline in sub_lines:
+                rate = getattr(sline, 'tax_rate', 0.0) or default_rate
+                line_sub = sline.subtotal or (sline.quantity * sline.unit_price)
+                tax_amount = round(line_sub * (rate / 100.0), 2)
                 line = InvoiceLine(
                     invoice_id=invoice.id,
                     product_id=sline.product_id,
@@ -521,13 +540,14 @@ def run_billing_day(
                     description=getattr(sline, 'description', None),
                     quantity=sline.quantity,
                     unit_price=sline.unit_price,
-                    tax_rate=getattr(sline, 'tax_rate', 0.0),
-                    price_subtotal=sline.subtotal
+                    tax_rate=rate,
+                    tax_id=default_tax_id,
+                    price_subtotal=line_sub
                 )
                 db.add(line)
-                total_amount += sline.subtotal
+                total_amount += (line_sub + tax_amount)
         
-        invoice.total_amount = total_amount
+        invoice.total_amount = round(total_amount, 2)
         
         # Advance next billing date
         plan = db.query(RecurringPlan).filter(RecurringPlan.id == sub.recurring_plan_id).first()

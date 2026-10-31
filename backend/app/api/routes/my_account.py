@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from pydantic import BaseModel
 from typing import Optional
 from app.db.base import get_db
@@ -10,6 +11,7 @@ from app.models.subscription import Subscription
 from app.models.invoice import Invoice
 from app.models.product import Product
 from app.models.recurring_plan import RecurringPlan
+from app.models.tax import Tax
 from app.core.security import get_password_hash
 
 router = APIRouter()
@@ -185,25 +187,46 @@ def get_my_invoices(
     db: Session = Depends(get_db)
 ):
     """Get all invoices for logged-in user"""
-    # Get invoices through subscriptions and orders
-    invoices = db.query(Invoice).join(
+    # Get invoices through subscriptions and orders or matching name/email
+    invoices = db.query(Invoice).outerjoin(
         Subscription, Invoice.subscription_id == Subscription.id
-    ).join(
+    ).outerjoin(
         Order, Subscription.order_id == Order.id
     ).filter(
-        Order.user_id == current_user.id
+        or_(
+            Order.user_id == current_user.id,
+            Invoice.customer_name == current_user.name,
+            Invoice.customer_name == current_user.email
+        )
     ).order_by(Invoice.date_issued.desc()).all()
     
     result = []
+    default_tax = db.query(Tax).filter(Tax.is_active == True).first()
+    
     for invoice in invoices:
+        inv_subtotal = 0.0
+        inv_tax = 0.0
+        for line in invoice.invoice_lines:
+            sub = float(line.price_subtotal or 0.0)
+            rate = float(line.tax_rate or 0.0)
+            if rate == 0 and default_tax:
+                rate = default_tax.value
+            t_amt = sub * (rate / 100.0)
+            inv_subtotal += sub
+            inv_tax += t_amt
+            
+        final_total = invoice.total_amount if invoice.total_amount > inv_subtotal else (inv_subtotal + inv_tax)
+        
         result.append({
             "id": invoice.id,
             "number": invoice.number,
             "customer_name": invoice.customer_name,
             "date_issued": invoice.date_issued.isoformat(),
             "due_date": invoice.due_date.isoformat(),
-            "total_amount": invoice.total_amount,
-            "status": invoice.status
+            "subtotal": round(inv_subtotal, 2),
+            "tax_amount": round(inv_tax, 2),
+            "total_amount": round(final_total, 2),
+            "status": invoice.status.value if hasattr(invoice.status, 'value') else invoice.status
         })
     
     return result
@@ -214,15 +237,19 @@ def get_my_invoice_detail(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get detailed invoice information for logged-in user"""
+    """Get detailed invoice information for logged-in user with tax breakdown"""
     # Verify invoice belongs to current user
-    invoice = db.query(Invoice).join(
+    invoice = db.query(Invoice).outerjoin(
         Subscription, Invoice.subscription_id == Subscription.id
-    ).join(
+    ).outerjoin(
         Order, Subscription.order_id == Order.id
     ).filter(
         Invoice.id == invoice_id,
-        Order.user_id == current_user.id
+        or_(
+            Order.user_id == current_user.id,
+            Invoice.customer_name == current_user.name,
+            Invoice.customer_name == current_user.email
+        )
     ).first()
     
     if not invoice:
@@ -230,25 +257,43 @@ def get_my_invoice_detail(
     
     # Build invoice lines
     invoice_lines = []
+    total_tax = 0.0
+    subtotal = 0.0
+    default_tax = db.query(Tax).filter(Tax.is_active == True).first()
+
     for line in invoice.invoice_lines:
         product = db.query(Product).filter(Product.id == line.product_id).first()
-        
+        line_sub = float(line.price_subtotal or 0.0)
+        rate = float(line.tax_rate or 0.0)
+        if rate == 0 and default_tax:
+            rate = default_tax.value
+        line_tax = line_sub * (rate / 100.0)
+        total_tax += line_tax
+        subtotal += line_sub
+
         invoice_lines.append({
             "id": line.id,
             "product_name": product.name if product else "Unknown",
             "quantity": line.quantity,
             "unit_price": line.unit_price,
-            "price_subtotal": line.price_subtotal
+            "tax_rate": rate,
+            "tax_amount": round(line_tax, 2),
+            "price_subtotal": round(line_sub, 2),
+            "total_with_tax": round(line_sub + line_tax, 2)
         })
     
+    final_total = invoice.total_amount if invoice.total_amount > subtotal else (subtotal + total_tax)
+
     return {
         "id": invoice.id,
         "number": invoice.number,
         "customer_name": invoice.customer_name,
         "date_issued": invoice.date_issued.isoformat(),
         "due_date": invoice.due_date.isoformat(),
-        "total_amount": invoice.total_amount,
-        "status": invoice.status,
+        "subtotal": round(subtotal, 2),
+        "tax_amount": round(total_tax, 2),
+        "total_amount": round(final_total, 2),
+        "status": invoice.status.value if hasattr(invoice.status, 'value') else invoice.status,
         "invoice_lines": invoice_lines
     }
 

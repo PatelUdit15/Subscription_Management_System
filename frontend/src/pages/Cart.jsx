@@ -33,24 +33,33 @@ const Cart = () => {
   const updateQuantity = (index, newQuantity) => {
     if (newQuantity < 1) return;
     const updatedCart = [...cartItems];
-    updatedCart[index].quantity = newQuantity;
-    updatedCart[index].finalPrice = (updatedCart[index].finalPrice / updatedCart[index].quantity) * newQuantity;
+    const item = updatedCart[index];
+    const prevQty = item.quantity || 1;
+    const unitPrice = item.unitPrice || (item.subtotal ? item.subtotal / prevQty : item.finalPrice / prevQty);
+    item.quantity = newQuantity;
+    item.unitPrice = unitPrice;
+    item.subtotal = Math.round(unitPrice * newQuantity * 100) / 100;
+    item.taxAmount = Math.round(item.subtotal * 0.18 * 100) / 100;
+    item.finalPrice = Math.round((item.subtotal + item.taxAmount) * 100) / 100;
     setCartItems(updatedCart);
     localStorage.setItem('cart', JSON.stringify(updatedCart));
     window.dispatchEvent(new Event('cartUpdated'));
   };
 
   const calculateSubtotal = () => {
-    return cartItems.reduce((sum, item) => sum + item.finalPrice, 0);
+    return cartItems.reduce((sum, item) => {
+      const price = item.subtotal ?? (item.unitPrice ? item.unitPrice * (item.quantity || 1) : item.finalPrice);
+      return sum + price;
+    }, 0);
   };
 
   const calculateTax = () => {
-    // Simple 10% tax calculation (you can enhance this with Module 2 tax rules)
-    return calculateSubtotal() * 0.10;
+    // 18% GST tax calculation
+    return Math.round(calculateSubtotal() * 0.18 * 100) / 100;
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
+    return Math.round((calculateSubtotal() + calculateTax()) * 100) / 100;
   };
 
   if (loading) {
@@ -96,7 +105,7 @@ const Cart = () => {
           <button
             onClick={() => navigate('/shop/products')}
             style={{
-              background: '#18181b',
+              background: '#875A7B',
               color: 'white',
               border: 'none',
               padding: '0.75rem 2rem',
@@ -106,8 +115,8 @@ const Cart = () => {
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
-            onMouseEnter={(e) => e.target.style.background = '#27272a'}
-            onMouseLeave={(e) => e.target.style.background = '#18181b'}
+            onMouseEnter={(e) => e.target.style.background = '#A6789C'}
+            onMouseLeave={(e) => e.target.style.background = '#875A7B'}
           >
             Browse Products
           </button>
@@ -184,6 +193,27 @@ const Cart = () => {
                 }}>
                   {item.productName}
                 </h3>
+                {item.variants && item.variants.length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.4rem',
+                    marginBottom: '0.4rem'
+                  }}>
+                    {item.variants.map((v, i) => (
+                      <span key={i} style={{
+                        background: '#EADBE7',
+                        color: '#875A7B',
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600'
+                      }}>
+                        {v.attribute_name}: {v.value_name}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <p style={{
                   color: '#71717a',
                   fontSize: '0.9rem',
@@ -192,11 +222,16 @@ const Cart = () => {
                   Plan: {item.planName}
                 </p>
                 <p style={{
-                  color: '#18181b',
-                  fontSize: '1.1rem',
-                  fontWeight: '600'
+                  color: '#875A7B',
+                  fontSize: '1.15rem',
+                  fontWeight: '700'
                 }}>
-                  ${item.finalPrice.toFixed(2)}
+                  ₹{(item.subtotal ?? (item.unitPrice ? item.unitPrice * (item.quantity || 1) : item.finalPrice)).toFixed(2)}
+                  {item.quantity > 1 && (
+                    <span style={{ fontSize: '0.85rem', color: '#71717a', fontWeight: '500', marginLeft: '0.5rem' }}>
+                      (₹{(item.unitPrice || (item.subtotal / item.quantity)).toFixed(2)} each)
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -308,14 +343,14 @@ const Cart = () => {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: '#71717a' }}>Subtotal</span>
-              <span style={{ color: '#18181b', fontWeight: '600' }}>
-                ${calculateSubtotal().toFixed(2)}
+              <span style={{ color: '#2E2E2E', fontWeight: '600' }}>
+                ₹{calculateSubtotal().toFixed(2)}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#71717a' }}>Tax (10%)</span>
-              <span style={{ color: '#18181b', fontWeight: '600' }}>
-                ${calculateTax().toFixed(2)}
+              <span style={{ color: '#71717a' }}>Estimated Tax (18% GST)</span>
+              <span style={{ color: '#1e40af', fontWeight: '600' }}>
+                +₹{calculateTax().toFixed(2)}
               </span>
             </div>
           </div>
@@ -328,17 +363,18 @@ const Cart = () => {
           }}>
             <span style={{
               fontFamily: 'Gabarito, sans-serif',
-              color: '#18181b',
+              color: '#2E2E2E',
               fontWeight: '700'
             }}>
               Total
             </span>
             <span style={{
               fontFamily: 'Gabarito, sans-serif',
-              color: '#18181b',
-              fontWeight: '700'
+              color: '#875A7B',
+              fontWeight: '700',
+              fontSize: '1.5rem'
             }}>
-              ${calculateTotal().toFixed(2)}
+              ₹{calculateTotal().toFixed(2)}
             </span>
           </div>
 
@@ -346,21 +382,22 @@ const Cart = () => {
             onClick={() => navigate('/shop/checkout')}
             style={{
               width: '100%',
-              background: '#18181b',
+              background: '#875A7B',
               color: 'white',
               border: 'none',
               padding: '1rem',
               borderRadius: '8px',
               fontSize: '1rem',
-              fontWeight: '600',
+              fontWeight: '700',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              marginBottom: '0.75rem'
+              marginBottom: '0.75rem',
+              boxShadow: '0 4px 12px rgba(135, 90, 123, 0.25)'
             }}
-            onMouseEnter={(e) => e.target.style.background = '#27272a'}
-            onMouseLeave={(e) => e.target.style.background = '#18181b'}
+            onMouseEnter={(e) => e.target.style.background = '#A6789C'}
+            onMouseLeave={(e) => e.target.style.background = '#875A7B'}
           >
-            Proceed to Checkout
+            Proceed to Checkout →
           </button>
 
           <button

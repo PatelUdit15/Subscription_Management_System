@@ -18,11 +18,22 @@ const CustomerProductDetail = () => {
 
   const fetchProductOptions = async () => {
     try {
-      const response = await axios.get(`/api/products/${id}/options`);
+      const response = await axios.get(`/products/${id}/options`);
       setProductData(response.data);
       
+      // Auto-select first variant for each attribute
+      if (response.data.variants && response.data.variants.length > 0) {
+        const initialVars = {};
+        response.data.variants.forEach(v => {
+          if (!initialVars[v.attribute_name]) {
+            initialVars[v.attribute_name] = v.id;
+          }
+        });
+        setSelectedVariants(initialVars);
+      }
+
       // Set default plan (first one, preferably monthly)
-      if (response.data.recurring_plans.length > 0) {
+      if (response.data.recurring_plans && response.data.recurring_plans.length > 0) {
         const monthlyPlan = response.data.recurring_plans.find(p => p.billing_period === 'month');
         setSelectedPlan(monthlyPlan || response.data.recurring_plans[0]);
       }
@@ -35,7 +46,7 @@ const CustomerProductDetail = () => {
 
   // Group variants by attribute
   const variantsByAttribute = useMemo(() => {
-    if (!productData) return {};
+    if (!productData || !productData.variants) return {};
     
     const grouped = {};
     productData.variants.forEach(variant => {
@@ -47,32 +58,50 @@ const CustomerProductDetail = () => {
     return grouped;
   }, [productData]);
 
-  // Calculate total price
-  const totalPrice = useMemo(() => {
-    if (!productData || !selectedPlan) return 0;
-    
-    let basePrice = productData.product.base_price;
-    
-    // Add extra prices from selected variants
+  // Base unit price including variants
+  const unitPrice = useMemo(() => {
+    if (!productData) return 0;
+    let base = productData.product.base_price;
     Object.values(selectedVariants).forEach(variantId => {
-      const variant = productData.variants.find(v => v.id === variantId);
+      const variant = productData.variants?.find(v => v.id === variantId);
       if (variant) {
-        basePrice += variant.extra_price;
+        base += variant.extra_price;
       }
     });
-    
-    // Multiply by duration and quantity
-    return basePrice * selectedPlan.duration_months * quantity;
-  }, [productData, selectedVariants, selectedPlan, quantity]);
+    return base;
+  }, [productData, selectedVariants]);
+
+  // Subtotal before tax
+  const subtotalPrice = useMemo(() => {
+    return unitPrice * quantity;
+  }, [unitPrice, quantity]);
+
+  // Tax calculation (18% GST)
+  const taxAmount = useMemo(() => {
+    return Math.round(subtotalPrice * 0.18 * 100) / 100;
+  }, [subtotalPrice]);
+
+  // Total price
+  const totalPrice = useMemo(() => {
+    return Math.round((subtotalPrice + taxAmount) * 100) / 100;
+  }, [subtotalPrice, taxAmount]);
 
   const handleAddToCart = () => {
+    const selectedVariantObjects = Object.values(selectedVariants)
+      .map(vid => productData.variants?.find(v => v.id === vid))
+      .filter(Boolean);
+
     const cartItem = {
       productId: parseInt(id),
       productName: productData.product.name,
       variantIds: Object.values(selectedVariants),
-      planId: selectedPlan.id,
-      planName: selectedPlan.name,
+      variants: selectedVariantObjects,
+      planId: selectedPlan?.id,
+      planName: selectedPlan?.name,
       quantity,
+      unitPrice,
+      subtotal: subtotalPrice,
+      taxAmount,
       finalPrice: totalPrice,
       addedAt: new Date().toISOString()
     };
@@ -82,7 +111,8 @@ const CustomerProductDetail = () => {
     existingCart.push(cartItem);
     localStorage.setItem('cart', JSON.stringify(existingCart));
 
-    // Update cart count in navbar (trigger storage event)
+    // Update cart count in navbar
+    window.dispatchEvent(new Event('cartUpdated'));
     window.dispatchEvent(new Event('storage'));
 
     // Show toast
@@ -91,10 +121,7 @@ const CustomerProductDetail = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+    return `₹${Number(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   if (loading) {
@@ -181,19 +208,38 @@ const CustomerProductDetail = () => {
       {showToast && (
         <div style={{
           position: 'fixed',
-          top: '100px',
+          top: '90px',
           right: '2rem',
-          background: '#10b981',
+          background: '#875A7B',
           color: 'white',
-          padding: '1rem 1.5rem',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          padding: '1rem 1.75rem',
+          borderRadius: '12px',
+          boxShadow: '0 8px 24px rgba(135, 90, 123, 0.35)',
           zIndex: 9999,
           fontFamily: 'Quicksand, sans-serif',
-          fontWeight: '600',
+          fontWeight: '700',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
           animation: 'slideIn 0.3s ease'
         }}>
-          ✓ Added to cart successfully!
+          <span>🛒</span>
+          <span>✓ {product.name} added to cart!</span>
+          <button
+            onClick={() => navigate('/shop/cart')}
+            style={{
+              marginLeft: '0.5rem',
+              padding: '0.35rem 0.75rem',
+              background: 'white',
+              color: '#875A7B',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: '700',
+              cursor: 'pointer'
+            }}
+          >
+            View Cart →
+          </button>
         </div>
       )}
 
@@ -201,14 +247,14 @@ const CustomerProductDetail = () => {
       <div style={{
         marginBottom: '2rem',
         fontFamily: 'Quicksand, sans-serif',
-        fontSize: '0.9rem',
-        color: '#71717a'
+        fontSize: '0.95rem',
+        color: '#6B6B6B'
       }}>
-        <span onClick={() => navigate('/shop')} style={{ cursor: 'pointer' }}>Home</span>
+        <span onClick={() => navigate('/shop')} style={{ cursor: 'pointer', color: '#875A7B', fontWeight: '600' }}>Home</span>
         {' / '}
-        <span onClick={() => navigate('/shop/products')} style={{ cursor: 'pointer' }}>Shop</span>
+        <span onClick={() => navigate('/shop/products')} style={{ cursor: 'pointer', color: '#875A7B', fontWeight: '600' }}>Shop</span>
         {' / '}
-        <span style={{ color: '#18181b' }}>{product.name}</span>
+        <span style={{ color: '#2E2E2E', fontWeight: '700' }}>{product.name}</span>
       </div>
 
       {/* Main Content Grid */}
@@ -266,8 +312,8 @@ const CustomerProductDetail = () => {
                 display: 'block',
                 fontFamily: 'Quicksand, sans-serif',
                 fontSize: '0.95rem',
-                fontWeight: '600',
-                color: '#18181b',
+                fontWeight: '700',
+                color: '#2E2E2E',
                 marginBottom: '0.75rem'
               }}>
                 Billing Cycle
@@ -283,16 +329,17 @@ const CustomerProductDetail = () => {
                     onClick={() => setSelectedPlan(plan)}
                     style={{
                       padding: '0.75rem 1.5rem',
-                      background: selectedPlan?.id === plan.id ? '#18181b' : 'white',
-                      color: selectedPlan?.id === plan.id ? 'white' : '#18181b',
-                      border: `2px solid ${selectedPlan?.id === plan.id ? '#18181b' : '#e5e7eb'}`,
-                      borderRadius: '8px',
+                      background: selectedPlan?.id === plan.id ? '#875A7B' : 'white',
+                      color: selectedPlan?.id === plan.id ? 'white' : '#2E2E2E',
+                      border: `2px solid ${selectedPlan?.id === plan.id ? '#875A7B' : '#EADBE7'}`,
+                      borderRadius: '10px',
                       fontFamily: 'Quicksand, sans-serif',
                       fontSize: '0.95rem',
-                      fontWeight: '600',
+                      fontWeight: selectedPlan?.id === plan.id ? '700' : '600',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
-                      position: 'relative'
+                      position: 'relative',
+                      boxShadow: selectedPlan?.id === plan.id ? '0 4px 12px rgba(135, 90, 123, 0.25)' : 'none'
                     }}
                   >
                     {plan.name}
@@ -319,56 +366,98 @@ const CustomerProductDetail = () => {
 
           {/* Variant Selection */}
           {Object.keys(variantsByAttribute).length > 0 && (
-            <div style={{ marginBottom: '2rem' }}>
+            <div style={{
+              marginBottom: '2rem',
+              background: '#F6F6F6',
+              padding: '1.5rem',
+              borderRadius: '16px',
+              border: '1px solid #EADBE7'
+            }}>
               <h3 style={{
                 fontFamily: 'Gabarito, sans-serif',
                 fontSize: '1.25rem',
-                fontWeight: '600',
-                color: '#18181b',
-                marginBottom: '1rem'
+                fontWeight: '700',
+                color: '#2E2E2E',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
               }}>
-                Customize Your Selection
+                <span>✨</span> Choose Variant & Options
               </h3>
               {Object.entries(variantsByAttribute).map(([attributeName, variants]) => (
-                <div key={attributeName} style={{ marginBottom: '1.5rem' }}>
+                <div key={attributeName} style={{ marginBottom: '1.25rem' }}>
                   <label style={{
                     display: 'block',
                     fontFamily: 'Quicksand, sans-serif',
                     fontSize: '0.95rem',
-                    fontWeight: '600',
-                    color: '#18181b',
-                    marginBottom: '0.5rem'
+                    fontWeight: '700',
+                    color: '#875A7B',
+                    marginBottom: '0.6rem'
                   }}>
                     {attributeName}
                   </label>
-                  <select
-                    value={selectedVariants[attributeName] || ''}
-                    onChange={(e) => setSelectedVariants({
-                      ...selectedVariants,
-                      [attributeName]: parseInt(e.target.value)
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem'
+                  }}>
+                    {variants.map(variant => {
+                      const isSelected = selectedVariants[attributeName] === variant.id;
+                      return (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          onClick={() => setSelectedVariants({
+                            ...selectedVariants,
+                            [attributeName]: variant.id
+                          })}
+                          style={{
+                            padding: '0.7rem 1.25rem',
+                            background: isSelected ? '#875A7B' : 'white',
+                            color: isSelected ? 'white' : '#2E2E2E',
+                            border: `2px solid ${isSelected ? '#875A7B' : '#EADBE7'}`,
+                            borderRadius: '12px',
+                            fontFamily: 'Quicksand, sans-serif',
+                            fontSize: '0.95rem',
+                            fontWeight: isSelected ? '700' : '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            boxShadow: isSelected ? '0 4px 12px rgba(135, 90, 123, 0.25)' : 'none'
+                          }}
+                        >
+                          <span style={{ fontSize: '0.9rem' }}>{isSelected ? '✓' : '○'}</span>
+                          <span>{variant.value_name}</span>
+                          {variant.extra_price > 0 ? (
+                            <span style={{
+                              background: isSelected ? 'rgba(255,255,255,0.25)' : '#EADBE7',
+                              color: isSelected ? 'white' : '#875A7B',
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '20px',
+                              fontSize: '0.8rem',
+                              fontWeight: '700'
+                            }}>
+                              +₹{variant.extra_price.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span style={{
+                              background: isSelected ? 'rgba(255,255,255,0.2)' : '#F6F6F6',
+                              color: isSelected ? 'white' : '#71717a',
+                              padding: '0.15rem 0.45rem',
+                              borderRadius: '20px',
+                              fontSize: '0.75rem',
+                              fontWeight: '500'
+                            }}>
+                              Included
+                            </span>
+                          )}
+                        </button>
+                      );
                     })}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem 1rem',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '0.95rem',
-                      fontFamily: 'Quicksand, sans-serif',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      outline: 'none'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#18181b'}
-                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                  >
-                    <option value="">Select {attributeName}</option>
-                    {variants.map(variant => (
-                      <option key={variant.id} value={variant.id}>
-                        {variant.value_name} 
-                        {variant.extra_price > 0 && ` (+${formatCurrency(variant.extra_price)})`}
-                      </option>
-                    ))}
-                  </select>
+                  </div>
                 </div>
               ))}
             </div>
@@ -380,8 +469,8 @@ const CustomerProductDetail = () => {
               display: 'block',
               fontFamily: 'Quicksand, sans-serif',
               fontSize: '0.95rem',
-              fontWeight: '600',
-              color: '#18181b',
+              fontWeight: '700',
+              color: '#2E2E2E',
               marginBottom: '0.5rem'
             }}>
               Quantity
@@ -394,14 +483,15 @@ const CustomerProductDetail = () => {
               style={{
                 width: '120px',
                 padding: '0.75rem 1rem',
-                border: '2px solid #e5e7eb',
+                border: '2px solid #EADBE7',
                 borderRadius: '8px',
                 fontSize: '0.95rem',
                 fontFamily: 'Quicksand, sans-serif',
-                outline: 'none'
+                outline: 'none',
+                fontWeight: '600'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#18181b'}
-              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              onFocus={(e) => e.target.style.borderColor = '#875A7B'}
+              onBlur={(e) => e.target.style.borderColor = '#EADBE7'}
             />
           </div>
         </div>
@@ -413,15 +503,16 @@ const CustomerProductDetail = () => {
         }}>
           <div style={{
             background: 'white',
-            border: '2px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '2rem'
+            border: '1px solid #EADBE7',
+            borderRadius: '16px',
+            padding: '2rem',
+            boxShadow: '0 4px 16px rgba(135, 90, 123, 0.08)'
           }}>
             <h3 style={{
               fontFamily: 'Gabarito, sans-serif',
               fontSize: '1.5rem',
-              fontWeight: '600',
-              color: '#18181b',
+              fontWeight: '700',
+              color: '#2E2E2E',
               marginBottom: '1.5rem'
             }}>
               Order Summary
@@ -438,12 +529,12 @@ const CustomerProductDetail = () => {
                 color: '#52525b'
               }}>
                 <span>Base Price:</span>
-                <span>{formatCurrency(product.base_price)}</span>
+                <span style={{ fontWeight: '600', color: '#2E2E2E' }}>{formatCurrency(product.base_price)}</span>
               </div>
 
               {Object.entries(selectedVariants).map(([attrName, variantId]) => {
                 const variant = productData.variants.find(v => v.id === variantId);
-                if (!variant || variant.extra_price === 0) return null;
+                if (!variant) return null;
                 return (
                   <div key={attrName} style={{
                     display: 'flex',
@@ -451,10 +542,10 @@ const CustomerProductDetail = () => {
                     marginBottom: '0.75rem',
                     fontFamily: 'Quicksand, sans-serif',
                     fontSize: '0.95rem',
-                    color: '#52525b'
+                    color: '#875A7B'
                   }}>
-                    <span>{attrName}: {variant.value_name}</span>
-                    <span>+{formatCurrency(variant.extra_price)}</span>
+                    <span>{attrName}: <strong>{variant.value_name}</strong></span>
+                    <span>{variant.extra_price > 0 ? `+${formatCurrency(variant.extra_price)}` : 'Included'}</span>
                   </div>
                 );
               })}
@@ -469,7 +560,7 @@ const CustomerProductDetail = () => {
                   color: '#52525b'
                 }}>
                   <span>Billing Cycle:</span>
-                  <span>{selectedPlan.name}</span>
+                  <span style={{ fontWeight: '600' }}>{selectedPlan.name}</span>
                 </div>
               )}
 
@@ -483,16 +574,42 @@ const CustomerProductDetail = () => {
                   color: '#52525b'
                 }}>
                   <span>Quantity:</span>
-                  <span>×{quantity}</span>
+                  <span style={{ fontWeight: '600' }}>×{quantity}</span>
                 </div>
               )}
+
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                paddingTop: '0.5rem',
+                borderTop: '1px dashed #EADBE7',
+                marginBottom: '0.5rem',
+                fontFamily: 'Quicksand, sans-serif',
+                fontSize: '0.95rem',
+                color: '#52525b'
+              }}>
+                <span>Subtotal:</span>
+                <span style={{ fontWeight: '600', color: '#2E2E2E' }}>{formatCurrency(subtotalPrice)}</span>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: '0.5rem',
+                fontFamily: 'Quicksand, sans-serif',
+                fontSize: '0.95rem',
+                color: '#1e40af'
+              }}>
+                <span>Estimated Tax (18% GST):</span>
+                <span style={{ fontWeight: '600' }}>+{formatCurrency(taxAmount)}</span>
+              </div>
             </div>
 
             {/* Total Price */}
             <div style={{
-              borderTop: '2px solid #e5e7eb',
-              paddingTop: '1.5rem',
-              marginBottom: '2rem'
+              borderTop: '2px solid #EADBE7',
+              paddingTop: '1.25rem',
+              marginBottom: '1.75rem'
             }}>
               <div style={{
                 display: 'flex',
@@ -502,8 +619,8 @@ const CustomerProductDetail = () => {
                 <span style={{
                   fontFamily: 'Gabarito, sans-serif',
                   fontSize: '1.25rem',
-                  fontWeight: '600',
-                  color: '#18181b'
+                  fontWeight: '700',
+                  color: '#2E2E2E'
                 }}>
                   Total:
                 </span>
@@ -511,22 +628,20 @@ const CustomerProductDetail = () => {
                   fontFamily: 'Gabarito, sans-serif',
                   fontSize: '2rem',
                   fontWeight: '700',
-                  color: '#18181b'
+                  color: '#875A7B'
                 }}>
                   {formatCurrency(totalPrice)}
                 </span>
               </div>
-              {selectedPlan && selectedPlan.duration_months > 1 && (
-                <div style={{
-                  fontFamily: 'Quicksand, sans-serif',
-                  fontSize: '0.85rem',
-                  color: '#71717a',
-                  textAlign: 'right',
-                  marginTop: '0.5rem'
-                }}>
-                  for {selectedPlan.duration_months} month{selectedPlan.duration_months > 1 ? 's' : ''}
-                </div>
-              )}
+              <div style={{
+                fontFamily: 'Quicksand, sans-serif',
+                fontSize: '0.8rem',
+                color: '#71717a',
+                textAlign: 'right',
+                marginTop: '0.35rem'
+              }}>
+                Inclusive of 18% GST tax
+              </div>
             </div>
 
             {/* Add to Cart Button */}
@@ -536,46 +651,53 @@ const CustomerProductDetail = () => {
               style={{
                 width: '100%',
                 padding: '1rem',
-                background: selectedPlan ? '#18181b' : '#d4d4d8',
+                background: selectedPlan ? '#875A7B' : '#d4d4d8',
                 color: 'white',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '12px',
                 fontSize: '1.1rem',
-                fontWeight: '600',
+                fontWeight: '700',
                 fontFamily: 'Quicksand, sans-serif',
                 cursor: selectedPlan ? 'pointer' : 'not-allowed',
                 transition: 'all 0.2s ease',
-                marginBottom: '1rem'
+                marginBottom: '0.85rem',
+                boxShadow: selectedPlan ? '0 4px 14px rgba(135, 90, 123, 0.35)' : 'none'
               }}
               onMouseEnter={(e) => {
-                if (selectedPlan) e.target.style.background = '#27272a';
+                if (selectedPlan) e.target.style.background = '#A6789C';
               }}
               onMouseLeave={(e) => {
-                if (selectedPlan) e.target.style.background = '#18181b';
+                if (selectedPlan) e.target.style.background = '#875A7B';
               }}
             >
-              Add to Cart
+              🛒 Add to Cart
             </button>
 
             <button
               onClick={() => navigate('/shop/products')}
               style={{
                 width: '100%',
-                padding: '0.875rem',
-                background: 'white',
-                color: '#18181b',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '1rem',
+                padding: '0.85rem',
+                background: '#F6F6F6',
+                color: '#2E2E2E',
+                border: '1px solid #EADBE7',
+                borderRadius: '12px',
+                fontSize: '0.95rem',
                 fontWeight: '600',
                 fontFamily: 'Quicksand, sans-serif',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
-              onMouseEnter={(e) => e.target.style.borderColor = '#18181b'}
-              onMouseLeave={(e) => e.target.style.borderColor = '#e5e7eb'}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = '#875A7B';
+                e.target.style.color = '#875A7B';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = '#EADBE7';
+                e.target.style.color = '#2E2E2E';
+              }}
             >
-              Continue Shopping
+              ← Back to Shop
             </button>
           </div>
         </div>

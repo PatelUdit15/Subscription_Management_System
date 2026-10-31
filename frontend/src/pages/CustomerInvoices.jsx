@@ -231,7 +231,7 @@ const CustomerInvoices = () => {
               fontWeight: '700',
               color: '#875A7B'
             }}>
-              ${totalBilled.toFixed(2)}
+              ₹{totalBilled.toFixed(2)}
             </div>
           </div>
 
@@ -253,7 +253,7 @@ const CustomerInvoices = () => {
               fontWeight: '700',
               color: '#16a34a'
             }}>
-              ${totalPaid.toFixed(2)}
+              ₹{totalPaid.toFixed(2)}
             </div>
           </div>
 
@@ -275,7 +275,7 @@ const CustomerInvoices = () => {
               fontWeight: '700',
               color: totalDue > 0 ? '#d97706' : '#16a34a'
             }}>
-              ${totalDue.toFixed(2)}
+              ₹{totalDue.toFixed(2)}
             </div>
           </div>
         </div>
@@ -463,11 +463,11 @@ const CustomerInvoices = () => {
                           fontWeight: '700',
                           color: '#2E2E2E'
                         }}>
-                          ${(inv.total_amount || 0).toFixed(2)}
+                          ₹{(inv.total_amount || 0).toFixed(2)}
                         </div>
                         {inv.status !== 'paid' && inv.balance_outstanding !== undefined && (
                           <span style={{ fontSize: '0.78rem', color: '#d97706', fontWeight: '600' }}>
-                            Due: ${inv.balance_outstanding.toFixed(2)}
+                            Due: ₹{inv.balance_outstanding.toFixed(2)}
                           </span>
                         )}
                       </td>
@@ -691,10 +691,10 @@ const CustomerInvoices = () => {
                           {line.quantity || 1}
                         </td>
                         <td style={{ padding: '1rem 0', textAlign: 'right', color: '#6B6B6B' }}>
-                          ${(line.unit_price || 0).toFixed(2)}
+                          ₹{(line.unit_price || 0).toFixed(2)}
                         </td>
                         <td style={{ padding: '1rem 0', textAlign: 'right', fontWeight: '700', color: '#2E2E2E' }}>
-                          ${(line.subtotal || (line.quantity * line.unit_price) || 0).toFixed(2)}
+                          ₹{(line.subtotal || (line.quantity * line.unit_price) || 0).toFixed(2)}
                         </td>
                       </tr>
                     ))
@@ -705,10 +705,10 @@ const CustomerInvoices = () => {
                       </td>
                       <td style={{ padding: '1rem 0', textAlign: 'center', color: '#6B6B6B' }}>1</td>
                       <td style={{ padding: '1rem 0', textAlign: 'right', color: '#6B6B6B' }}>
-                        ${(selectedInvoice.total_amount || 0).toFixed(2)}
+                        ₹{(selectedInvoice.total_amount || 0).toFixed(2)}
                       </td>
                       <td style={{ padding: '1rem 0', textAlign: 'right', fontWeight: '700', color: '#2E2E2E' }}>
-                        ${(selectedInvoice.total_amount || 0).toFixed(2)}
+                        ₹{(selectedInvoice.total_amount || 0).toFixed(2)}
                       </td>
                     </tr>
                   )}
@@ -725,11 +725,11 @@ const CustomerInvoices = () => {
               <div style={{ width: '280px', borderTop: '2px solid #EADBE7', paddingTop: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: '#6B6B6B', fontSize: '0.95rem' }}>
                   <span>Subtotal:</span>
-                  <span>${(selectedInvoice.total_amount || 0).toFixed(2)}</span>
+                  <span>₹{((selectedInvoice.total_amount || 0) / 1.18).toFixed(2)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', color: '#6B6B6B', fontSize: '0.95rem' }}>
-                  <span>Tax:</span>
-                  <span>$0.00</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', color: '#1e40af', fontSize: '0.95rem' }}>
+                  <span>Tax (GST 18%):</span>
+                  <span>+₹{((selectedInvoice.total_amount || 0) - ((selectedInvoice.total_amount || 0) / 1.18)).toFixed(2)}</span>
                 </div>
                 <div style={{
                   display: 'flex',
@@ -742,7 +742,7 @@ const CustomerInvoices = () => {
                   fontFamily: 'Gabarito, sans-serif'
                 }}>
                   <span>Total Amount:</span>
-                  <span>${(selectedInvoice.total_amount || 0).toFixed(2)}</span>
+                  <span>₹{(selectedInvoice.total_amount || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>

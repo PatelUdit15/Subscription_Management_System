@@ -13,6 +13,7 @@ from app.models.recurring_plan import RecurringPlan, BillingPeriod
 from app.models.invoice import Invoice, InvoiceStatus
 from app.models.invoice_line import InvoiceLine
 from app.models.payment import Payment, PaymentMethod
+from app.models.tax import Tax
 from app.api.routes.auth import get_current_user
 from app.models.user import User
 import uuid
@@ -147,17 +148,16 @@ def process_checkout(
                         unit_price += variant.extra_price
                         variant_id = vid  # Store last variant for reference
             
-            # Calculate duration multiplier
-            duration_months = 1
-            if plan.billing_period == BillingPeriod.month:
-                duration_months = 1
-            elif plan.billing_period == BillingPeriod.year:
-                duration_months = 12
-            elif plan.billing_period == BillingPeriod.weeks:
-                duration_months = 0.25
+            # Line subtotal before tax
+            line_subtotal = round(unit_price * item.quantity, 2)
             
-            # Calculate total price for this line
-            line_total = unit_price * duration_months * item.quantity
+            # Calculate active tax (e.g. GST 18%)
+            active_tax = db.query(Tax).filter(Tax.is_active == True).first()
+            tax_rate = active_tax.value if active_tax else 18.0
+            tax_id = active_tax.id if active_tax else None
+            tax_amount = round(line_subtotal * (tax_rate / 100.0), 2)
+            line_total = round(line_subtotal + tax_amount, 2)
+            
             total_amount += line_total
             
             # Create Order Line
@@ -189,7 +189,7 @@ def process_checkout(
                 db.flush()  # Get subscription ID
                 subscriptions_created.append(subscription)
                 
-                # Generate first invoice for subscription
+                # Generate first invoice for subscription with taxes included
                 invoice_number = generate_invoice_number(db)
                 date_issued = datetime.now().date()
                 due_date = date_issued + timedelta(days=30)
@@ -206,14 +206,16 @@ def process_checkout(
                 db.add(invoice)
                 db.flush()
                 
-                # Create invoice line
+                # Create invoice line with tax rate and subtotal
                 invoice_line = InvoiceLine(
                     invoice_id=invoice.id,
                     product_id=product.id,
                     variant_id=variant_id,
                     quantity=item.quantity,
                     unit_price=unit_price,
-                    price_subtotal=line_total
+                    tax_rate=tax_rate,
+                    tax_id=tax_id,
+                    price_subtotal=line_subtotal
                 )
                 db.add(invoice_line)
 

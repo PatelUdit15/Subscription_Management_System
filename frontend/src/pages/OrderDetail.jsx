@@ -349,7 +349,7 @@ const OrderDetail = () => {
                             textAlign: 'right',
                             color: '#2E2E2E'
                           }}>
-                            ${line.unit_price?.toFixed(2)}
+                            ₹{line.unit_price?.toFixed(2)}
                           </td>
                           <td style={{
                             padding: '1rem',
@@ -358,7 +358,7 @@ const OrderDetail = () => {
                             fontWeight: '700',
                             fontFamily: 'Gabarito, sans-serif'
                           }}>
-                            ${line.total_price?.toFixed(2)}
+                            ₹{line.total_price?.toFixed(2)}
                           </td>
                         </tr>
                       ))}
@@ -392,7 +392,7 @@ const OrderDetail = () => {
                       fontWeight: '700',
                       fontFamily: 'Gabarito, sans-serif'
                     }}>
-                      ${order.total_amount?.toFixed(2)}
+                      ₹{order.total_amount?.toFixed(2)}
                     </span>
                   </div>
                 </div>

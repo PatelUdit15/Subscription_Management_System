@@ -159,7 +159,7 @@ const PaymentQRCode = ({ amount, orderData, onSuccess, onCancel }) => {
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>Amount Due</div>
           <div style={{ fontSize: '1.8rem', fontWeight: '800' }}>
-            ${amount.toFixed(2)}
+            ₹{amount.toFixed(2)}
           </div>
         </div>
       </div>
@@ -397,7 +397,7 @@ const PaymentQRCode = ({ amount, orderData, onSuccess, onCancel }) => {
               ) : (
                 <>
                   <Lock size={18} />
-                  <span>Pay ${amount.toFixed(2)} with Stripe</span>
+                  <span>Pay ₹{amount.toFixed(2)} with Stripe</span>
                 </>
               )}
             </button>

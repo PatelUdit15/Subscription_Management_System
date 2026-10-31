@@ -65,7 +65,10 @@ const CustomerHome = () => {
         planId: selectedPlan.id,
         planName: selectedPlan.name,
         quantity: 1,
-        finalPrice: product.base_price * (selectedPlan.duration_months || 1),
+        unitPrice: product.base_price,
+        subtotal: product.base_price,
+        taxAmount: Math.round(product.base_price * 0.18 * 100) / 100,
+        finalPrice: Math.round(product.base_price * 1.18 * 100) / 100,
         addedAt: new Date().toISOString()
       };
 
@@ -88,21 +91,60 @@ const CustomerHome = () => {
     }
   };
 
-  // Unique categories
-  const categories = ['all', ...new Set(products.map(p => p.product_type || p.type).filter(Boolean))];
+  // All categories configuration
+  const allCategoryDefinitions = [
+    { id: 'all', label: 'All Products', icon: '✨' },
+    { id: 'subscription', label: 'Subscriptions', icon: '🔄' },
+    { id: 'streaming', label: 'Streaming & Video', icon: '🎬' },
+    { id: 'music', label: 'Music & Audio', icon: '🎵' },
+    { id: 'service', label: 'Digital Services', icon: '⚡' },
+    { id: 'software', label: 'Software & Cloud', icon: '💻' },
+    { id: 'storable', label: 'Physical & Storable', icon: '📦' },
+    { id: 'consulting', label: 'Consulting', icon: '🎯' }
+  ];
+
+  const dynamicCategories = [...new Set(products.map(p => p.product_type || p.type).filter(Boolean))];
+  const categories = [
+    ...allCategoryDefinitions,
+    ...dynamicCategories
+      .filter(c => !allCategoryDefinitions.some(def => def.id === c))
+      .map(c => ({ id: c, label: String(c).charAt(0).toUpperCase() + String(c).slice(1), icon: '🏷️' }))
+  ];
 
   // Filter and sort products
   const filteredProducts = products
     .filter(product => {
-      const prodType = product.product_type || product.type;
-      const matchesSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || prodType === selectedCategory;
+      const prodType = (product.product_type || product.type || '').toLowerCase();
+      const prodName = (product.name || '').toLowerCase();
+      const prodDesc = (product.description || '').toLowerCase();
+      const matchesSearch = prodName.includes(searchTerm.toLowerCase()) ||
+                            prodDesc.includes(searchTerm.toLowerCase());
+
+      let matchesCategory = true;
+      if (selectedCategory !== 'all') {
+        if (selectedCategory === 'streaming') {
+          matchesCategory = prodName.includes('netflix') || prodName.includes('stream') || prodName.includes('amazon') || prodName.includes('youtube') || prodDesc.includes('stream') || prodDesc.includes('video');
+        } else if (selectedCategory === 'music') {
+          matchesCategory = prodName.includes('spotify') || prodName.includes('music') || prodName.includes('audio') || prodDesc.includes('music') || prodDesc.includes('audio');
+        } else if (selectedCategory === 'subscription') {
+          matchesCategory = prodType === 'service' || prodName.includes('subscription') || !!product.billing_period || prodName.includes('netflix') || prodName.includes('spotify') || prodName.includes('amazon') || prodName.includes('youtube');
+        } else if (selectedCategory === 'service') {
+          matchesCategory = prodType === 'service';
+        } else if (selectedCategory === 'storable') {
+          matchesCategory = prodType === 'storable';
+        } else if (selectedCategory === 'software') {
+          matchesCategory = prodType === 'software' || prodName.includes('software') || prodName.includes('cloud') || prodName.includes('suite');
+        } else if (selectedCategory === 'consulting') {
+          matchesCategory = prodType === 'consulting' || prodName.includes('consult');
+        } else {
+          matchesCategory = prodType === selectedCategory.toLowerCase() || prodName.includes(selectedCategory.toLowerCase());
+        }
+      }
 
       let matchesPrice = true;
-      if (priceRange === 'under50') matchesPrice = product.base_price < 50;
-      else if (priceRange === '50to100') matchesPrice = product.base_price >= 50 && product.base_price <= 100;
-      else if (priceRange === 'over100') matchesPrice = product.base_price > 100;
+      if (priceRange === 'under500') matchesPrice = product.base_price < 500;
+      else if (priceRange === '500to1000') matchesPrice = product.base_price >= 500 && product.base_price <= 1000;
+      else if (priceRange === 'over1000') matchesPrice = product.base_price > 1000;
 
       return matchesSearch && matchesCategory && matchesPrice;
     })
@@ -359,9 +401,9 @@ const CustomerHome = () => {
                   }}
                 >
                   <option value="all">All Prices</option>
-                  <option value="under50">Under $50</option>
-                  <option value="50to100">$50 - $100</option>
-                  <option value="over100">Over $100</option>
+                  <option value="under500">Under ₹500</option>
+                  <option value="500to1000">₹500 - ₹1,000</option>
+                  <option value="over1000">Over ₹1,000</option>
                 </select>
               </div>
 
@@ -391,29 +433,32 @@ const CustomerHome = () => {
               </div>
             </div>
 
-            {/* Bottom row: Category filter tabs */}
+            {/* Bottom row: Category filter tabs - scroll hidden, wrapped cleanly */}
             {categories.length > 1 && (
               <div style={{
                 display: 'flex',
                 gap: '0.5rem',
-                overflowX: 'auto',
+                flexWrap: 'wrap',
                 paddingTop: '0.75rem',
                 borderTop: '1px solid #F6F6F6',
-                alignItems: 'center'
+                alignItems: 'center',
+                overflow: 'hidden',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none'
               }}>
                 <span style={{ color: '#6B6B6B', fontSize: '0.85rem', fontWeight: '600', marginRight: '0.25rem' }}>
                   Categories:
                 </span>
                 {categories.map(cat => (
                   <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
                     style={{
-                      padding: '0.5rem 1rem',
-                      background: selectedCategory === cat ? '#875A7B' : '#F6F6F6',
-                      color: selectedCategory === cat ? 'white' : '#6B6B6B',
+                      padding: '0.5rem 1.1rem',
+                      background: selectedCategory === cat.id ? '#875A7B' : '#F6F6F6',
+                      color: selectedCategory === cat.id ? 'white' : '#6B6B6B',
                       border: '1px solid',
-                      borderColor: selectedCategory === cat ? '#875A7B' : '#EADBE7',
+                      borderColor: selectedCategory === cat.id ? '#875A7B' : '#EADBE7',
                       borderRadius: '20px',
                       fontSize: '0.85rem',
                       fontWeight: '600',
@@ -421,10 +466,14 @@ const CustomerHome = () => {
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       whiteSpace: 'nowrap',
-                      textTransform: 'capitalize'
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      boxShadow: selectedCategory === cat.id ? '0 2px 8px rgba(135, 90, 123, 0.25)' : 'none'
                     }}
                   >
-                    {cat === 'all' ? 'All Categories' : cat}
+                    <span>{cat.icon}</span>
+                    <span>{cat.label}</span>
                   </button>
                 ))}
               </div>
@@ -512,7 +561,7 @@ const CustomerHome = () => {
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   display: 'flex',
                   flexDirection: 'column',
-                  minHeight: '380px',
+                  minHeight: 'auto',
                   boxShadow: '0 2px 8px rgba(46, 46, 46, 0.04)',
                   position: 'relative'
                 }}
@@ -574,7 +623,7 @@ const CustomerHome = () => {
                       color: '#2E2E2E',
                       fontSize: '1.2rem',
                       fontWeight: '700',
-                      marginBottom: '0.5rem',
+                      marginBottom: '0.75rem',
                       fontFamily: 'Gabarito, sans-serif',
                       cursor: 'pointer',
                       transition: 'color 0.2s ease',
@@ -585,23 +634,6 @@ const CustomerHome = () => {
                   >
                     {product.name}
                   </h3>
-
-                  {product.description && (
-                    <p style={{
-                      color: '#6B6B6B',
-                      fontSize: '0.88rem',
-                      lineHeight: 1.5,
-                      marginBottom: '1rem',
-                      flex: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical'
-                    }}>
-                      {product.description}
-                    </p>
-                  )}
 
                   {/* Pricing and Billing Badge */}
                   <div style={{
@@ -619,7 +651,7 @@ const CustomerHome = () => {
                         fontWeight: '700',
                         fontFamily: 'Gabarito, sans-serif'
                       }}>
-                        ${Number(product.base_price || 0).toFixed(2)}
+                        ₹{Number(product.base_price || 0).toFixed(2)}
                       </div>
                       {product.billing_period && (
                         <span style={{ fontSize: '0.75rem', color: '#6B6B6B' }}>

@@ -69,23 +69,35 @@ def calculate_invoice_total(db: Session, invoice_id: int):
         return
     
     total_amount = 0.0
+    default_tax = db.query(Tax).filter(Tax.is_active == True).first()
     
     for line in invoice_obj.invoice_lines:
-        # Line subtotal (already calculated with discount)
-        total_amount += line.price_subtotal
+        line_subtotal = float(line.price_subtotal or 0.0)
+        line_tax = 0.0
         
-        # Calculate tax on the discounted subtotal
+        # Calculate tax on the subtotal
         if line.tax_id:
             tax = db.query(Tax).filter(Tax.id == line.tax_id).first()
             if tax:
                 if tax.type == "percentage":
-                    line_tax = line.price_subtotal * (tax.value / 100)
+                    line_tax = line_subtotal * (tax.value / 100.0)
                 else:  # fixed
                     line_tax = tax.value
-                total_amount += line_tax
+                line.tax_rate = tax.value
+        elif getattr(line, 'tax_rate', None) and float(line.tax_rate) > 0:
+            line_tax = line_subtotal * (float(line.tax_rate) / 100.0)
+        elif default_tax:
+            line.tax_id = default_tax.id
+            line.tax_rate = default_tax.value
+            if default_tax.type == "percentage":
+                line_tax = line_subtotal * (default_tax.value / 100.0)
+            else:
+                line_tax = default_tax.value
+        
+        total_amount += (line_subtotal + line_tax)
     
     # Update invoice total
-    invoice_obj.total_amount = total_amount
+    invoice_obj.total_amount = round(total_amount, 2)
     db.commit()
 
 @router.get("/invoices", response_model=List[invoice.Invoice])
@@ -93,15 +105,19 @@ def get_invoices(db: Session = Depends(get_db)):
     """Get all invoices"""
     return db.query(Invoice).order_by(Invoice.id.desc()).all()
 
-@router.get("/invoices/{invoice_id}", response_model=invoice.InvoiceDetail)
+@router.get("/invoices/{invoice_id}")
 def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
-    """Get invoice details with line items"""
+    """Get invoice details with line items including calculated taxes"""
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not db_invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     
     # Build line details
     line_details = []
+    total_tax_amount = 0.0
+    subtotal_amount = 0.0
+    default_tax = db.query(Tax).filter(Tax.is_active == True).first()
+
     for line in db_invoice.invoice_lines:
         product = db.query(Product).filter(Product.id == line.product_id).first()
         variant = None
@@ -112,12 +128,23 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
                 variant_name = f"{variant.attribute_value.attribute.name}: {variant.attribute_value.value}"
         
         tax_name = None
-        tax_value = None
+        tax_value = 0.0
         if line.tax_id:
             tax = db.query(Tax).filter(Tax.id == line.tax_id).first()
             if tax:
                 tax_name = tax.name
                 tax_value = tax.value
+        elif getattr(line, 'tax_rate', None) and float(line.tax_rate) > 0:
+            tax_value = float(line.tax_rate)
+            tax_name = f"Tax ({tax_value}%)"
+        elif default_tax:
+            tax_name = default_tax.name
+            tax_value = default_tax.value
+
+        line_sub = float(line.price_subtotal or 0.0)
+        line_tax = line_sub * (tax_value / 100.0)
+        total_tax_amount += line_tax
+        subtotal_amount += line_sub
         
         discount_name = None
         discount_value = None
@@ -136,16 +163,29 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
             "quantity": line.quantity,
             "unit_price": line.unit_price,
             "tax_id": line.tax_id,
+            "tax_rate": tax_value,
             "tax_name": tax_name,
             "tax_value": tax_value,
+            "tax_amount": round(line_tax, 2),
             "discount_id": line.discount_id,
             "discount_name": discount_name,
             "discount_value": discount_value,
-            "price_subtotal": line.price_subtotal
+            "price_subtotal": line.price_subtotal,
+            "total_with_tax": round(line_sub + line_tax, 2)
         })
     
     return {
-        **db_invoice.__dict__,
+        "id": db_invoice.id,
+        "number": db_invoice.number,
+        "customer_name": db_invoice.customer_name,
+        "date_issued": db_invoice.date_issued.isoformat() if db_invoice.date_issued else None,
+        "due_date": db_invoice.due_date.isoformat() if db_invoice.due_date else None,
+        "subscription_id": db_invoice.subscription_id,
+        "status": db_invoice.status.value if hasattr(db_invoice.status, 'value') else db_invoice.status,
+        "notes": db_invoice.notes,
+        "subtotal": round(subtotal_amount, 2),
+        "tax_amount": round(total_tax_amount, 2),
+        "total_amount": round(subtotal_amount + total_tax_amount, 2),
         "invoice_lines": line_details
     }
 
